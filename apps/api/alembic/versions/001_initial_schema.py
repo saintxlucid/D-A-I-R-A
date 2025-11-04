@@ -19,9 +19,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
-    op.execute("CREATE TYPE posttype AS ENUM ('video', 'image', 'text', 'voice')")
-    op.execute("CREATE TYPE roomstate AS ENUM ('open', 'closed')")
+    # Create enum types (if not exists)
+    op.execute("DO $$ BEGIN CREATE TYPE posttype AS ENUM ('video', 'image', 'text', 'voice'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    op.execute("DO $$ BEGIN CREATE TYPE roomstate AS ENUM ('open', 'closed'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
 
     # Users table
     op.create_table(
