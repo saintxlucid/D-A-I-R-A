@@ -6,10 +6,15 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   lint-and-typecheck:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -48,6 +53,8 @@ jobs:
   api-tests:
     name: API Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     services:
       postgres:
         image: postgres:16-alpine

@@ -5,10 +5,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Images
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       matrix:
         app: [api, web]
