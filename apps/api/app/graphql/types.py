@@ -1,11 +1,25 @@
 from typing import List, Optional
 from datetime import datetime
+from enum import Enum
 import strawberry
 from strawberry.types import Info
 
 
+class PostTypeEnum(str, Enum):
+    VIDEO = "video"
+    IMAGE = "image"
+    TEXT = "text"
+    VOICE = "voice"
+
+
+class PostVisibilityEnum(str, Enum):
+    PUBLIC = "public"
+    FOLLOWERS = "followers"
+    PRIVATE = "private"
+
+
 @strawberry.enum
-class PostType:
+class PostType(Enum):
     VIDEO = "video"
     IMAGE = "image"
     TEXT = "text"
@@ -13,7 +27,7 @@ class PostType:
 
 
 @strawberry.enum
-class PostVisibility:
+class PostVisibility(Enum):
     PUBLIC = "public"
     FOLLOWERS = "followers"
     PRIVATE = "private"
