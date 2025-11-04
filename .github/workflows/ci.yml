@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web-lint:
+    name: Web - Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Lint
+        run: cd apps/web && pnpm lint
+      
+      - name: Type check
+        run: cd apps/web && pnpm tsc --noEmit
+
+  web-build:
+    name: Web - Build
+    runs-on: ubuntu-latest
+    needs: web-lint
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build
+        run: cd apps/web && pnpm build
+
+  api-lint:
+    name: API - Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements.txt -r requirements-dev.txt
+      
+      - name: Black
+        run: cd apps/api && black --check .
+      
+      - name: Ruff
+        run: cd apps/api && ruff check .
+      
+      - name: isort
+        run: cd apps/api && isort --check-only .
+
+  api-test:
+    name: API - Test
+    runs-on: ubuntu-latest
+    needs: api-lint
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: daira
+          POSTGRES_PASSWORD: daira
+          POSTGRES_DB: daira
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          cd apps/api
+          pip install -r requirements.txt -r requirements-dev.txt
+      
+      - name: Run tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: daira
+          POSTGRES_PASSWORD: daira
+          POSTGRES_DB: daira
+        run: cd apps/api && pytest -v
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./apps/api/coverage.xml
+          flags: api
