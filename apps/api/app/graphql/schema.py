@@ -1,11 +1,12 @@
-import strawberry
-from typing import List, Optional
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import List, Optional
 
-from app.graphql.types import User, Post, Room, Digest, Comment
-from app.database import SessionLocal
+import strawberry
+
 from app import models
+from app.database import SessionLocal
+from app.graphql.types import Digest, Post, Room, User
 
 
 def get_db():
@@ -77,9 +78,7 @@ class Query:
                     visibility=post.visibility,
                     created_at=post.created_at,
                     author=author_user,
-                    likes_count=len(
-                        [r for r in post.reactions if r.type == "like"]
-                    ),
+                    likes_count=len([r for r in post.reactions if r.type == "like"]),
                     comments_count=len(post.comments),
                 )
             )
@@ -245,9 +244,7 @@ class Mutation:
     @strawberry.mutation
     def create_room(self, host_id: str, topic: str, starts_at: datetime) -> Room:
         db = get_db()
-        room = models.Room(
-            id=str(uuid.uuid4()), host_id=host_id, topic=topic, starts_at=starts_at
-        )
+        room = models.Room(id=str(uuid.uuid4()), host_id=host_id, topic=topic, starts_at=starts_at)
         db.add(room)
         db.commit()
         db.refresh(room)

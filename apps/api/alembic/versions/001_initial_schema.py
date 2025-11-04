@@ -1,13 +1,15 @@
 """initial schema
 
 Revision ID: 001
-Revises: 
+Revises:
 Create Date: 2024-01-01 00:00:00.000000
 
 """
-from alembic import op
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "001"
@@ -29,7 +31,9 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("bio", sa.Text(), nullable=True),
         sa.Column("avatar", sa.String(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
@@ -40,7 +44,9 @@ def upgrade() -> None:
         "follows",
         sa.Column("src_user_id", sa.String(), nullable=False),
         sa.Column("dst_user_id", sa.String(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["src_user_id"], ["users.id"]),
         sa.ForeignKeyConstraint(["dst_user_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("src_user_id", "dst_user_id"),
@@ -52,11 +58,17 @@ def upgrade() -> None:
         "posts",
         sa.Column("id", sa.String(), nullable=False),
         sa.Column("author_id", sa.String(), nullable=False),
-        sa.Column("type", postgresql.ENUM('video', 'image', 'text', 'voice', name='posttype'), nullable=False),
+        sa.Column(
+            "type",
+            postgresql.ENUM("video", "image", "text", "voice", name="posttype"),
+            nullable=False,
+        ),
         sa.Column("caption", sa.Text(), nullable=True),
         sa.Column("media_refs", sa.JSON(), nullable=True),
         sa.Column("visibility", sa.String(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["author_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -71,7 +83,9 @@ def upgrade() -> None:
         sa.Column("post_id", sa.String(), nullable=False),
         sa.Column("user_id", sa.String(), nullable=False),
         sa.Column("type", sa.String(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["post_id"], ["posts.id"]),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -86,7 +100,9 @@ def upgrade() -> None:
         sa.Column("user_id", sa.String(), nullable=False),
         sa.Column("parent_comment_id", sa.String(), nullable=True),
         sa.Column("text", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["post_id"], ["posts.id"]),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"]),
         sa.ForeignKeyConstraint(["parent_comment_id"], ["comments.id"]),
@@ -94,7 +110,9 @@ def upgrade() -> None:
     )
     op.create_index(op.f("ix_comments_id"), "comments", ["id"], unique=False)
     op.create_index(op.f("ix_comments_created_at"), "comments", ["created_at"], unique=False)
-    op.create_index("idx_comments_post_created", "comments", ["post_id", "created_at"], unique=False)
+    op.create_index(
+        "idx_comments_post_created", "comments", ["post_id", "created_at"], unique=False
+    )
 
     # Rooms table
     op.create_table(
@@ -104,8 +122,10 @@ def upgrade() -> None:
         sa.Column("topic", sa.String(), nullable=False),
         sa.Column("starts_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("ends_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("state", postgresql.ENUM('open', 'closed', name='roomstate'), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column("state", postgresql.ENUM("open", "closed", name="roomstate"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["host_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -117,7 +137,9 @@ def upgrade() -> None:
         sa.Column("id", sa.String(), nullable=False),
         sa.Column("room_id", sa.String(), nullable=False),
         sa.Column("summary", sa.Text(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
         sa.ForeignKeyConstraint(["room_id"], ["rooms.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

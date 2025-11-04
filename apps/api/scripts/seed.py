@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Seed script to populate demo data"""
-import sys
 import os
-from datetime import datetime, timedelta
+import sys
 import uuid
+from datetime import datetime, timedelta
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import SessionLocal
-from app.models import User, Post, PostType, Room, RoomState, Digest
+from app.models import Digest, Post, PostType, Room, RoomState, User
+
 
 def seed():
     db = SessionLocal()
@@ -36,7 +37,13 @@ def seed():
         # Create 5 demo posts
         posts = []
         for i in range(5):
-            post_type = [PostType.VIDEO, PostType.IMAGE, PostType.TEXT, PostType.VOICE, PostType.IMAGE][i]
+            post_type = [
+                PostType.VIDEO,
+                PostType.IMAGE,
+                PostType.TEXT,
+                PostType.VOICE,
+                PostType.IMAGE,
+            ][i]
             post = Post(
                 id=str(uuid.uuid4()),
                 author_id=demo_user.id,
@@ -99,6 +106,7 @@ Duration: 1 hour
         raise
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     seed()

@@ -1,7 +1,8 @@
-from sqlalchemy import Column, String, Integer, DateTime, Enum, Text, JSON, ForeignKey, Index
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 import enum
+
+from sqlalchemy import JSON, Column, DateTime, Enum, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from app.database import Base
 
@@ -39,9 +40,7 @@ class Follow(Base):
     dst_user_id = Column(String, ForeignKey("users.id"), primary_key=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (
-        Index("idx_follows_dst", "dst_user_id"),
-    )
+    __table_args__ = (Index("idx_follows_dst", "dst_user_id"),)
 
 
 class Post(Base):
@@ -59,9 +58,7 @@ class Post(Base):
     reactions = relationship("Reaction", back_populates="post")
     comments = relationship("Comment", back_populates="post")
 
-    __table_args__ = (
-        Index("idx_posts_author_created", "author_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_posts_author_created", "author_id", "created_at"),)
 
 
 class Reaction(Base):
@@ -75,9 +72,7 @@ class Reaction(Base):
 
     post = relationship("Post", back_populates="reactions")
 
-    __table_args__ = (
-        Index("idx_reactions_post_user", "post_id", "user_id"),
-    )
+    __table_args__ = (Index("idx_reactions_post_user", "post_id", "user_id"),)
 
 
 class Comment(Base):
@@ -92,9 +87,7 @@ class Comment(Base):
 
     post = relationship("Post", back_populates="comments")
 
-    __table_args__ = (
-        Index("idx_comments_post_created", "post_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_comments_post_created", "post_id", "created_at"),)
 
 
 class Room(Base):
