@@ -1,25 +1,17 @@
+@import "./tokens.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap");
 
+/* Legacy color tokens for compatibility */
 :root {
   --color-nile-blue: #0d2c56;
   --color-sandstone: #d9c8a0;
   --color-basalt: #2c2c2c;
   --color-electric-mint: #2cf5c4;
   --color-off-white: #fafaf8;
-}
-
-body {
-  font-family: "Inter", system-ui, sans-serif;
-  background-color: var(--color-off-white);
-  color: var(--color-basalt);
-}
-
-body[dir="rtl"] {
-  font-family: "Cairo", system-ui, sans-serif;
 }
 
 @layer utilities {

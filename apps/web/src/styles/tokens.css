@@ -1,0 +1,158 @@
+/* DAIRA Frontend UI Kit v1.5 - OKLCH Tokens & Theme System */
+
+:root {
+  color-scheme: dark;
+  
+  /* Base palette in OKLCH for perceptual consistency */
+  --bg: oklch(0.15 0.03 280);
+  --surface: oklch(0.18 0.03 280);
+  --card: oklch(0.21 0.03 280);
+  --border: color-mix(in oklch, white 8%, transparent);
+  --text: oklch(0.96 0 0);
+  --muted: oklch(0.72 0.02 280);
+  
+  /* Brand (DAIRA) — Nile Fuchsia ↔ Sahara Rose */
+  --brand-1: oklch(0.72 0.23 330);  /* primary */
+  --brand-2: oklch(0.70 0.23 300);  /* accent */
+  --brand-3: oklch(0.78 0.15 320);  /* soft */
+
+  /* Gradients */
+  --g-primary: linear-gradient(90deg, var(--brand-1), var(--brand-2));
+  --g-card: linear-gradient(180deg, oklch(0.23 0.03 280 / .75), oklch(0.16 0.03 280 / .95));
+  --g-hero: radial-gradient(1200px 600px at 50% -10%, oklch(0.35 0.07 320 / .6), transparent),
+            linear-gradient(180deg, oklch(0.26 0.05 320 / .6), oklch(0.14 0.03 280 / .9));
+
+  /* Elevation */
+  --shadow-glow: 0 0 0 1px color-mix(in oklch, var(--brand-1) 12%, transparent),
+                 0 18px 40px -18px oklch(0.16 0.03 280 / .65);
+
+  /* Radii & spacing scale */
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Typography — fluid scale */
+  --font-sans: ui-sans-serif, system-ui, "Inter", "Cairo", "IBM Plex Sans Arabic", Arial;
+  --fs-hero: clamp(2.5rem, 2rem + 2vw, 4.25rem);
+  --fs-h1: clamp(2rem, 1.6rem + 1.6vw, 3.25rem);
+  --fs-h2: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);
+}
+
+/* Light mode */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: oklch(0.98 0.01 280);
+  --surface: oklch(0.98 0.01 280);
+  --card: oklch(0.96 0.01 280);
+  --text: oklch(0.16 0.02 280);
+  --muted: oklch(0.43 0.02 280);
+  --border: color-mix(in oklch, black 12%, transparent);
+}
+
+/* High contrast mode */
+:root[data-contrast="high"] {
+  --brand-1: oklch(0.86 0.24 330);
+  --brand-2: oklch(0.24 0.02 280);
+  --border: color-mix(in oklch, white 16%, transparent);
+}
+
+/* Base styles */
+html {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Utility classes */
+.gradient-text {
+  background: var(--g-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card-surface {
+  background: var(--g-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--brand-1);
+  outline-offset: 2px;
+}
+
+/* Logical props for RTL safety */
+.lpad-3 {
+  padding-inline-start: var(--space-3);
+}
+
+.rpad-3 {
+  padding-inline-end: var(--space-3);
+}
+
+.lmargin-4 {
+  margin-inline-start: var(--space-4);
+}
+
+.rmargin-4 {
+  margin-inline-end: var(--space-4);
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Smooth scroll behavior */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
