@@ -19,9 +19,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types (if not exists)
-    op.execute("DO $$ BEGIN CREATE TYPE posttype AS ENUM ('video', 'image', 'text', 'voice'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
-    op.execute("DO $$ BEGIN CREATE TYPE roomstate AS ENUM ('open', 'closed'); EXCEPTION WHEN duplicate_object THEN null; END $$;")
+    # Create enum types manually
+    op.execute("CREATE TYPE posttype AS ENUM ('video', 'image', 'text', 'voice')")
+    op.execute("CREATE TYPE roomstate AS ENUM ('open', 'closed')")
 
     # Users table
     op.create_table(
@@ -60,7 +60,7 @@ def upgrade() -> None:
         sa.Column("author_id", sa.String(), nullable=False),
         sa.Column(
             "type",
-            postgresql.ENUM("video", "image", "text", "voice", name="posttype"),
+            postgresql.ENUM("video", "image", "text", "voice", name="posttype", create_type=False),
             nullable=False,
         ),
         sa.Column("caption", sa.Text(), nullable=True),
@@ -122,7 +122,7 @@ def upgrade() -> None:
         sa.Column("topic", sa.String(), nullable=False),
         sa.Column("starts_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("ends_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("state", postgresql.ENUM("open", "closed", name="roomstate"), nullable=True),
+        sa.Column("state", postgresql.ENUM("open", "closed", name="roomstate", create_type=False), nullable=True),
         sa.Column(
             "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
         ),

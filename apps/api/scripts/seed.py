@@ -3,7 +3,7 @@
 import os
 import sys
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -60,8 +60,8 @@ def seed():
             id=str(uuid.uuid4()),
             host_id=demo_user.id,
             topic="Welcome to DAIRA: Discussing the Future of Social Media",
-            starts_at=datetime.utcnow() - timedelta(hours=2),
-            ends_at=datetime.utcnow() - timedelta(hours=1),
+            starts_at=datetime.now(UTC) - timedelta(hours=2),
+            ends_at=datetime.now(UTC) - timedelta(hours=1),
             state=RoomState.CLOSED,
         )
         db.add(room)

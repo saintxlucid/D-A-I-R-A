@@ -48,7 +48,7 @@ class Post(Base):
 
     id = Column(String, primary_key=True, index=True)
     author_id = Column(String, ForeignKey("users.id"), nullable=False)
-    type = Column(Enum(PostType), nullable=False)
+    type = Column(Enum(PostType, native_enum=True, create_type=False, name="posttype", values_callable=lambda x: [e.value for e in x]), nullable=False)
     caption = Column(Text)
     media_refs = Column(JSON)  # List of URLs
     visibility = Column(String, default="public")
@@ -98,7 +98,7 @@ class Room(Base):
     topic = Column(String, nullable=False)
     starts_at = Column(DateTime(timezone=True), nullable=False)
     ends_at = Column(DateTime(timezone=True))
-    state = Column(Enum(RoomState), default=RoomState.OPEN)
+    state = Column(Enum(RoomState, native_enum=True, create_type=False, name="roomstate", values_callable=lambda x: [e.value for e in x]), default=RoomState.OPEN)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     host = relationship("User", back_populates="hosted_rooms")
