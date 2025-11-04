@@ -2,6 +2,7 @@ from typing import List, Optional
 import strawberry
 from strawberry.types import Info
 from sqlalchemy.orm import Session
+from fastapi import Depends
 
 from .types import User, Post, Comment, PostType, PostVisibility
 from ..database import get_db
@@ -13,6 +14,8 @@ class Query:
     @strawberry.field
     def posts(self, info: Info, limit: int = 50) -> List[Post]:
         """Get latest posts (limit: 50)"""
+        # Note: In production, use FastAPI's dependency injection
+        # This is a simplified version for the monorepo scaffold
         db: Session = next(get_db())
         try:
             db_posts = (
@@ -40,6 +43,8 @@ class Query:
     @strawberry.field
     def user(self, info: Info, id: Optional[int] = None, handle: Optional[str] = None) -> Optional[User]:
         """Get user by ID or handle"""
+        # Note: In production, use FastAPI's dependency injection
+        # This is a simplified version for the monorepo scaffold
         db: Session = next(get_db())
         try:
             query = db.query(models.User)
@@ -70,6 +75,8 @@ class Mutation:
     @strawberry.mutation
     def create_user(self, info: Info, handle: str, name: str, bio: Optional[str] = None) -> User:
         """Create a new user"""
+        # Note: In production, use FastAPI's dependency injection
+        # This is a simplified version for the monorepo scaffold
         db: Session = next(get_db())
         try:
             db_user = models.User(handle=handle, name=name, bio=bio)
@@ -99,6 +106,8 @@ class Mutation:
         visibility: PostVisibility = PostVisibility.PUBLIC,
     ) -> Post:
         """Create a new post"""
+        # Note: In production, use FastAPI's dependency injection
+        # This is a simplified version for the monorepo scaffold
         db: Session = next(get_db())
         try:
             media_refs_str = ",".join(media_refs) if media_refs else None

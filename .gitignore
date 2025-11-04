@@ -57,3 +57,10 @@ docker-data/
 # Misc
 *.pem
 .vercel
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Service Worker (generated)
+apps/web/public/sw.js
+apps/web/public/workbox-*.js
