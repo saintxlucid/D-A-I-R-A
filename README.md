@@ -61,34 +61,43 @@ D-A-I-R-A/
 
 ## 🚀 Quick Start
 
-There are two ways to run DAIRA:
-
-### Option 1: Full Docker Setup (Recommended for Production)
+### Option 1: One-Command Start (Recommended)
 
 ```bash
 # Clone the repository
 git clone https://github.com/saintxlucid/D-A-I-R-A.git
 cd D-A-I-R-A
 
-# Start all services (this will take 5-10 minutes on first run)
-docker compose up --build
+# Use the start script (handles everything)
+./start.sh
 ```
+
+### Option 2: Manual Docker Compose (Full Control)
+
+```bash
+# Clone the repository
+git clone https://github.com/saintxlucid/D-A-I-R-A.git
+cd D-A-I-R-A
+
+# Start all services (this will take 10-15 minutes on first run due to npm install)
+docker compose up --build
+
+# In another terminal, seed the database
+docker compose exec -T api sh -c "cd /app && PYTHONPATH=/app python scripts/seed.py"
+```
+
+**Note**: The web app build (npm install) can take 10-15 minutes on first run. For faster development, use Option 3 below.
 
 This will start:
 - **Web App**: http://localhost:3000
 - **API**: http://localhost:8000
 - **GraphQL Playground**: http://localhost:8000/graphql
-- **MinIO Console**: http://localhost:9001
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
 - **PostgreSQL**: localhost:5432
 - **Redis**: localhost:6379
 - **Redpanda**: localhost:9092
 
-After services are running, seed the database:
-```bash
-docker compose exec api python /app/scripts/../seed.py
-```
-
-### Option 2: Development Setup (Recommended for Development)
+### Option 3: Development Setup (Fastest - Recommended for Development)
 
 This starts only the backend services (Postgres, Redis, etc.) and runs the API and web app locally for faster iteration.
 
