@@ -76,47 +76,6 @@ services:
       timeout: 10s
       retries: 5
 
-  api:
-    build:
-      context: ./apps/api
-      dockerfile: Dockerfile
-    container_name: daira-api
-    environment:
-      DATABASE_URL: postgresql+asyncpg://daira:daira123@postgres:5432/daira
-      REDIS_URL: redis://redis:6379/0
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
-      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
-    ports:
-      - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      redpanda:
-        condition: service_healthy
-    volumes:
-      - ./apps/api:/app
-      - ./scripts:/app/scripts
-    command: sh -c "python -m app.init_db && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
-
-  web:
-    build:
-      context: ./apps/web
-      dockerfile: Dockerfile
-    container_name: daira-web
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/graphql
-      NODE_ENV: production
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api
-
 volumes:
   postgres_data:
   redis_data:

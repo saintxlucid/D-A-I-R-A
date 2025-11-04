@@ -61,25 +61,16 @@ D-A-I-R-A/
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
+There are two ways to run DAIRA:
+
+### Option 1: Full Docker Setup (Recommended for Production)
 
 ```bash
+# Clone the repository
 git clone https://github.com/saintxlucid/D-A-I-R-A.git
 cd D-A-I-R-A
-```
 
-### 2. Environment Setup
-
-Copy the example environment files:
-
-```bash
-cp .env.example .env
-cp apps/web/.env.example apps/web/.env
-```
-
-### 3. Start All Services
-
-```bash
+# Start all services (this will take 5-10 minutes on first run)
 docker compose up --build
 ```
 
@@ -92,22 +83,92 @@ This will start:
 - **Redis**: localhost:6379
 - **Redpanda**: localhost:9092
 
-### 4. Seed the Database
-
-In a new terminal, run:
-
+After services are running, seed the database:
 ```bash
-docker compose exec api python /app/../scripts/seed.py
+docker compose exec api python /app/scripts/../seed.py
 ```
 
-Or install dependencies locally and run:
+### Option 2: Development Setup (Recommended for Development)
+
+This starts only the backend services (Postgres, Redis, etc.) and runs the API and web app locally for faster iteration.
+
+#### Step 1: Start Backend Services
+
+```bash
+# Clone the repository
+git clone https://github.com/saintxlucid/D-A-I-R-A.git
+cd D-A-I-R-A
+
+# Start backend services only
+docker compose -f docker-compose.services.yml up -d
+```
+
+#### Step 2: Setup and Run API
 
 ```bash
 cd apps/api
-pip install -e .
+pip install -r requirements.txt
+
+# Initialize database
+export DATABASE_URL="postgresql+asyncpg://daira:daira123@localhost:5432/daira"
+python -m app.init_db
+
+# Seed database
 cd ../..
 python scripts/seed.py
+
+# Start API
+cd apps/api
+uvicorn app.main:app --reload
 ```
+
+API will be available at http://localhost:8000
+
+#### Step 3: Setup and Run Web App
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+Web app will be available at http://localhost:3000
+
+### 3. Environment Setup (Optional)
+
+Copy the example environment files if you need custom configuration:
+
+```bash
+cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+```
+
+## ✅ Verification
+
+After starting the services, verify everything is working:
+
+### Check API Health
+```bash
+curl http://localhost:8000/health
+# Should return: {"status":"healthy"}
+```
+
+### Test GraphQL Query
+```bash
+curl -X POST http://localhost:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "query { posts { id content author { username displayName } } }"}'
+```
+
+### Test GraphQL Mutation
+```bash
+curl -X POST http://localhost:8000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query": "mutation { createPost(content: \"Hello from GraphQL!\", authorId: 1) { id content } }"}'
+```
+
+### Visit Web App
+Open http://localhost:3000 in your browser to see the DAIRA social media interface.
 
 ## 📱 Application Screens
 
