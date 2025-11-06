@@ -1,0 +1,858 @@
+-- DAIRA Database Schema with Row Level Security (RLS)
+-- PostgreSQL 15+ required
+-- This migration creates the complete database schema for DAIRA platform
+
+-- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pg_trgm"; -- For fuzzy text search
+CREATE EXTENSION IF NOT EXISTS "btree_gin"; -- For composite indexes
+
+-- ============================================================================
+-- HELPER FUNCTIONS FOR RLS
+-- ============================================================================
+
+-- Function to get current user ID from session variable
+CREATE OR REPLACE FUNCTION app_user_id() RETURNS INTEGER AS $$
+BEGIN
+    RETURN NULLIF(current_setting('app.user_id', true), '')::INTEGER;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN NULL;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- ============================================================================
+-- ENUMS
+-- ============================================================================
+
+CREATE TYPE user_type AS ENUM ('regular', 'creator', 'verified_creator', 'brand');
+CREATE TYPE post_type AS ENUM ('regular', 'sponsored', 'promoted');
+CREATE TYPE content_type AS ENUM ('text', 'image', 'video', 'voice', 'carousel');
+CREATE TYPE visibility_scope AS ENUM ('public', 'followers', 'close_friends', 'private');
+CREATE TYPE reaction_type AS ENUM ('like', 'love', 'laugh', 'sad', 'angry', 'save');
+CREATE TYPE notification_type AS ENUM ('like', 'comment', 'follow', 'mention', 'reply', 'repost', 'tip', 'subscription');
+CREATE TYPE moderation_action AS ENUM ('warn', 'limit', 'remove', 'ban', 'appeal_approved', 'appeal_denied');
+CREATE TYPE payout_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+
+-- ============================================================================
+-- USERS & AUTHENTICATION
+-- ============================================================================
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    display_name VARCHAR(100) NOT NULL,
+    bio TEXT,
+    
+    -- Creator features
+    user_type user_type DEFAULT 'regular' NOT NULL,
+    is_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    follower_count INTEGER DEFAULT 0 NOT NULL,
+    following_count INTEGER DEFAULT 0 NOT NULL,
+    creator_score FLOAT DEFAULT 0.0 NOT NULL,
+    
+    -- Profile metadata
+    avatar_url TEXT,
+    cover_url TEXT,
+    location VARCHAR(255),
+    website_url TEXT,
+    
+    -- Settings
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    is_private BOOLEAN DEFAULT FALSE NOT NULL,
+    email_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    last_seen_at TIMESTAMP WITH TIME ZONE,
+    
+    -- Indexes
+    CONSTRAINT username_length CHECK (char_length(username) >= 3),
+    CONSTRAINT email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+);
+
+CREATE INDEX idx_users_username ON users USING btree (username);
+CREATE INDEX idx_users_email ON users USING btree (email);
+CREATE INDEX idx_users_user_type ON users USING btree (user_type) WHERE user_type IN ('creator', 'verified_creator', 'brand');
+CREATE INDEX idx_users_created_at ON users USING btree (created_at DESC);
+
+-- Auth sessions for JWT tokens
+CREATE TABLE auth_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    refresh_token_hash VARCHAR(255) NOT NULL,
+    device_fingerprint VARCHAR(255),
+    user_agent TEXT,
+    ip_address INET,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_auth_sessions_user_id ON auth_sessions (user_id);
+CREATE INDEX idx_auth_sessions_expires_at ON auth_sessions (expires_at);
+CREATE INDEX idx_auth_sessions_refresh_token_hash ON auth_sessions (refresh_token_hash);
+
+-- Devices for multi-device tracking
+CREATE TABLE devices (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_id UUID DEFAULT uuid_generate_v4() NOT NULL UNIQUE,
+    device_name VARCHAR(255),
+    device_type VARCHAR(50), -- ios, android, web
+    fcm_token TEXT, -- For push notifications
+    is_active BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    last_used_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_devices_user_id ON devices (user_id);
+CREATE INDEX idx_devices_device_id ON devices (device_id);
+
+-- ============================================================================
+-- SOCIAL GRAPH
+-- ============================================================================
+
+CREATE TABLE follows (
+    follower_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    followed_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (follower_id, followed_id),
+    CONSTRAINT no_self_follow CHECK (follower_id != followed_id)
+);
+
+CREATE INDEX idx_follows_follower_id ON follows (follower_id);
+CREATE INDEX idx_follows_followed_id ON follows (followed_id);
+CREATE INDEX idx_follows_created_at ON follows (created_at DESC);
+
+CREATE TABLE blocks (
+    blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (blocker_id, blocked_id),
+    CONSTRAINT no_self_block CHECK (blocker_id != blocked_id)
+);
+
+CREATE INDEX idx_blocks_blocker_id ON blocks (blocker_id);
+CREATE INDEX idx_blocks_blocked_id ON blocks (blocked_id);
+
+-- ============================================================================
+-- CONTENT (POSTS, REELS, STORIES, THREADS)
+-- ============================================================================
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    content_type content_type DEFAULT 'text' NOT NULL,
+    visibility visibility_scope DEFAULT 'public' NOT NULL,
+    
+    -- Media references (JSONB for flexibility)
+    media_refs JSONB DEFAULT '[]'::jsonb,
+    
+    -- Post types and sponsorship
+    post_type post_type DEFAULT 'regular' NOT NULL,
+    is_sponsored BOOLEAN DEFAULT FALSE NOT NULL,
+    sponsor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    
+    -- Engagement metrics
+    views_count INTEGER DEFAULT 0 NOT NULL,
+    likes_count INTEGER DEFAULT 0 NOT NULL,
+    comments_count INTEGER DEFAULT 0 NOT NULL,
+    shares_count INTEGER DEFAULT 0 NOT NULL,
+    saves_count INTEGER DEFAULT 0 NOT NULL,
+    
+    -- Metadata
+    location VARCHAR(255),
+    tagged_users INTEGER[] DEFAULT '{}',
+    
+    -- Flags
+    is_edited BOOLEAN DEFAULT FALSE NOT NULL,
+    is_pinned BOOLEAN DEFAULT FALSE NOT NULL,
+    comments_disabled BOOLEAN DEFAULT FALSE NOT NULL,
+    
+    -- Timestamps
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    published_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    
+    CONSTRAINT content_not_empty CHECK (char_length(content) > 0)
+);
+
+CREATE INDEX idx_posts_author_id_created_at ON posts (author_id, created_at DESC);
+CREATE INDEX idx_posts_created_at ON posts (created_at DESC);
+CREATE INDEX idx_posts_post_type ON posts (post_type);
+CREATE INDEX idx_posts_visibility ON posts (visibility);
+CREATE INDEX idx_posts_is_sponsored ON posts (is_sponsored) WHERE is_sponsored = TRUE;
+CREATE INDEX idx_posts_content_gin ON posts USING gin (to_tsvector('english', content));
+
+-- Stories (24h ephemeral content)
+CREATE TABLE stories (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content_type content_type NOT NULL,
+    media_url TEXT NOT NULL,
+    media_thumbnail_url TEXT,
+    visibility visibility_scope DEFAULT 'public' NOT NULL,
+    
+    -- Interactivity
+    interactive_elements JSONB DEFAULT '[]'::jsonb, -- polls, questions, etc.
+    
+    -- Metrics
+    views_count INTEGER DEFAULT 0 NOT NULL,
+    replies_count INTEGER DEFAULT 0 NOT NULL,
+    
+    -- TTL
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_stories_user_id ON stories (user_id);
+CREATE INDEX idx_stories_expires_at ON stories (expires_at);
+CREATE INDEX idx_stories_created_at ON stories (created_at DESC);
+
+-- Story viewers
+CREATE TABLE story_viewers (
+    story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+    viewer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    viewed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (story_id, viewer_id)
+);
+
+CREATE INDEX idx_story_viewers_story_id ON story_viewers (story_id);
+
+-- Threads (text-focused conversations)
+CREATE TABLE threads (
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    parent_thread_id INTEGER REFERENCES threads(id) ON DELETE CASCADE, -- For quote-threads
+    
+    -- Media
+    media_refs JSONB DEFAULT '[]'::jsonb,
+    
+    -- Metrics
+    likes_count INTEGER DEFAULT 0 NOT NULL,
+    replies_count INTEGER DEFAULT 0 NOT NULL,
+    reposts_count INTEGER DEFAULT 0 NOT NULL,
+    views_count INTEGER DEFAULT 0 NOT NULL,
+    
+    -- Flags
+    is_repost BOOLEAN DEFAULT FALSE NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_threads_author_id ON threads (author_id);
+CREATE INDEX idx_threads_created_at ON threads (created_at DESC);
+CREATE INDEX idx_threads_parent_thread_id ON threads (parent_thread_id);
+
+-- ============================================================================
+-- ENGAGEMENT (REACTIONS, COMMENTS, SAVES)
+-- ============================================================================
+
+CREATE TABLE reactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    thread_id INTEGER REFERENCES threads(id) ON DELETE CASCADE,
+    reaction_type reaction_type DEFAULT 'like' NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    
+    CONSTRAINT reaction_target CHECK (
+        (post_id IS NOT NULL AND thread_id IS NULL) OR
+        (post_id IS NULL AND thread_id IS NOT NULL)
+    ),
+    UNIQUE (user_id, post_id, reaction_type),
+    UNIQUE (user_id, thread_id, reaction_type)
+);
+
+CREATE INDEX idx_reactions_post_id ON reactions (post_id);
+CREATE INDEX idx_reactions_thread_id ON reactions (thread_id);
+CREATE INDEX idx_reactions_user_id ON reactions (user_id);
+CREATE INDEX idx_reactions_created_at ON reactions (created_at DESC);
+
+CREATE TABLE comments (
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    thread_id INTEGER REFERENCES threads(id) ON DELETE CASCADE,
+    parent_comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    
+    -- Metrics
+    likes_count INTEGER DEFAULT 0 NOT NULL,
+    replies_count INTEGER DEFAULT 0 NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    
+    CONSTRAINT comment_target CHECK (
+        (post_id IS NOT NULL AND thread_id IS NULL) OR
+        (post_id IS NULL AND thread_id IS NOT NULL)
+    ),
+    CONSTRAINT content_not_empty CHECK (char_length(content) > 0)
+);
+
+CREATE INDEX idx_comments_post_id_created_at ON comments (post_id, created_at DESC);
+CREATE INDEX idx_comments_thread_id_created_at ON comments (thread_id, created_at DESC);
+CREATE INDEX idx_comments_author_id ON comments (author_id);
+CREATE INDEX idx_comments_parent_comment_id ON comments (parent_comment_id);
+
+CREATE TABLE saves (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    collection_id INTEGER, -- References collections table (created later)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (user_id, post_id)
+);
+
+CREATE INDEX idx_saves_user_id ON saves (user_id, created_at DESC);
+CREATE INDEX idx_saves_post_id ON saves (post_id);
+
+-- ============================================================================
+-- HASHTAGS & SOUNDS
+-- ============================================================================
+
+CREATE TABLE hashtags (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    normalized_name VARCHAR(100) NOT NULL, -- For #ElAhly / #الأهلي collapsing
+    usage_count INTEGER DEFAULT 0 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_hashtags_name ON hashtags (name);
+CREATE INDEX idx_hashtags_normalized_name ON hashtags (normalized_name);
+CREATE INDEX idx_hashtags_usage_count ON hashtags (usage_count DESC);
+
+CREATE TABLE post_hashtags (
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    hashtag_id INTEGER NOT NULL REFERENCES hashtags(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, hashtag_id)
+);
+
+CREATE INDEX idx_post_hashtags_hashtag_id ON post_hashtags (hashtag_id);
+
+CREATE TABLE sounds (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    artist VARCHAR(255),
+    duration_seconds INTEGER,
+    audio_url TEXT NOT NULL,
+    cover_url TEXT,
+    
+    -- Rights management
+    is_original BOOLEAN DEFAULT TRUE NOT NULL,
+    original_creator_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    usage_rights TEXT, -- License type
+    
+    -- Metrics
+    usage_count INTEGER DEFAULT 0 NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_sounds_title ON sounds (title);
+CREATE INDEX idx_sounds_usage_count ON sounds (usage_count DESC);
+
+CREATE TABLE post_sounds (
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    sound_id INTEGER NOT NULL REFERENCES sounds(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, sound_id)
+);
+
+-- ============================================================================
+-- MESSAGING
+-- ============================================================================
+
+CREATE TABLE message_threads (
+    id SERIAL PRIMARY KEY,
+    is_group BOOLEAN DEFAULT FALSE NOT NULL,
+    name VARCHAR(255), -- For group threads
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE thread_members (
+    thread_id INTEGER NOT NULL REFERENCES message_threads(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    last_read_at TIMESTAMP WITH TIME ZONE,
+    is_admin BOOLEAN DEFAULT FALSE NOT NULL,
+    PRIMARY KEY (thread_id, user_id)
+);
+
+CREATE INDEX idx_thread_members_user_id ON thread_members (user_id);
+
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    thread_id INTEGER NOT NULL REFERENCES message_threads(id) ON DELETE CASCADE,
+    sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT,
+    content_type content_type DEFAULT 'text' NOT NULL,
+    media_url TEXT,
+    
+    -- Reply context
+    reply_to_message_id INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+    
+    -- Flags
+    is_deleted BOOLEAN DEFAULT FALSE NOT NULL,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_messages_thread_id_created_at ON messages (thread_id, created_at DESC);
+CREATE INDEX idx_messages_sender_id ON messages (sender_id);
+
+-- ============================================================================
+-- NOTIFICATIONS
+-- ============================================================================
+
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    notification_type notification_type NOT NULL,
+    
+    -- Target references
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    thread_id INTEGER REFERENCES threads(id) ON DELETE CASCADE,
+    
+    -- Metadata
+    metadata JSONB DEFAULT '{}'::jsonb,
+    
+    -- Status
+    is_read BOOLEAN DEFAULT FALSE NOT NULL,
+    read_at TIMESTAMP WITH TIME ZONE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_notifications_user_id_created_at ON notifications (user_id, created_at DESC);
+CREATE INDEX idx_notifications_is_read ON notifications (user_id, is_read) WHERE is_read = FALSE;
+
+-- ============================================================================
+-- FEED INFRASTRUCTURE
+-- ============================================================================
+
+-- Timeline inbox for hybrid fanout/fanin
+CREATE TABLE timeline_inbox (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    score FLOAT DEFAULT 0.0 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (user_id, post_id)
+);
+
+CREATE INDEX idx_timeline_inbox_user_id_score ON timeline_inbox (user_id, score DESC, created_at DESC);
+
+-- Recommendation candidates (fanin)
+CREATE TABLE rec_candidates (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    score FLOAT NOT NULL,
+    reason VARCHAR(50), -- affinity, quality, freshness, diversity
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    PRIMARY KEY (user_id, post_id)
+);
+
+CREATE INDEX idx_rec_candidates_user_id_score ON rec_candidates (user_id, score DESC);
+
+-- ============================================================================
+-- MODERATION & SAFETY
+-- ============================================================================
+
+CREATE TABLE reports (
+    id SERIAL PRIMARY KEY,
+    reporter_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reported_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    reported_post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    reported_comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    reason VARCHAR(255) NOT NULL,
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'pending' NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_reports_status ON reports (status);
+CREATE INDEX idx_reports_created_at ON reports (created_at DESC);
+
+CREATE TABLE moderation_events (
+    id SERIAL PRIMARY KEY,
+    moderator_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    target_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    target_post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    action moderation_action NOT NULL,
+    reason TEXT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_moderation_events_target_user_id ON moderation_events (target_user_id);
+CREATE INDEX idx_moderation_events_created_at ON moderation_events (created_at DESC);
+
+CREATE TABLE safety_flags (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    flag_type VARCHAR(50) NOT NULL, -- spam, hate_speech, violence, etc.
+    confidence_score FLOAT,
+    is_reviewed BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_safety_flags_is_reviewed ON safety_flags (is_reviewed) WHERE is_reviewed = FALSE;
+
+-- ============================================================================
+-- CREATOR ECONOMY
+-- ============================================================================
+
+CREATE TABLE creator_profiles (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    subscription_price_egp DECIMAL(10, 2),
+    subscription_benefits TEXT[],
+    tip_enabled BOOLEAN DEFAULT TRUE NOT NULL,
+    min_tip_egp DECIMAL(10, 2) DEFAULT 5.00,
+    
+    -- Bank details (encrypted in practice)
+    bank_account_info JSONB,
+    instapay_handle VARCHAR(255),
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE subscriptions (
+    id SERIAL PRIMARY KEY,
+    subscriber_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(50) DEFAULT 'active' NOT NULL,
+    price_egp DECIMAL(10, 2) NOT NULL,
+    started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    cancelled_at TIMESTAMP WITH TIME ZONE,
+    
+    UNIQUE (subscriber_id, creator_id)
+);
+
+CREATE INDEX idx_subscriptions_creator_id ON subscriptions (creator_id);
+CREATE INDEX idx_subscriptions_status ON subscriptions (status);
+
+CREATE TABLE tips (
+    id SERIAL PRIMARY KEY,
+    tipper_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE SET NULL,
+    amount_egp DECIMAL(10, 2) NOT NULL,
+    message TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_tips_creator_id ON tips (creator_id);
+CREATE INDEX idx_tips_created_at ON tips (created_at DESC);
+
+CREATE TABLE payouts (
+    id SERIAL PRIMARY KEY,
+    creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount_egp DECIMAL(10, 2) NOT NULL,
+    status payout_status DEFAULT 'pending' NOT NULL,
+    payment_method VARCHAR(50) NOT NULL,
+    payment_details JSONB,
+    
+    requested_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    processed_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    
+    notes TEXT
+);
+
+CREATE INDEX idx_payouts_creator_id ON payouts (creator_id);
+CREATE INDEX idx_payouts_status ON payouts (status);
+
+-- ============================================================================
+-- ADVERTISEMENTS
+-- ============================================================================
+
+CREATE TABLE advertisers (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    company_name VARCHAR(255) NOT NULL,
+    contact_email VARCHAR(255) NOT NULL,
+    billing_address JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE campaigns (
+    id SERIAL PRIMARY KEY,
+    advertiser_id INTEGER NOT NULL REFERENCES advertisers(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    objective VARCHAR(50) NOT NULL, -- reach, views, clicks
+    total_budget_egp DECIMAL(10, 2) NOT NULL,
+    daily_budget_egp DECIMAL(10, 2),
+    status VARCHAR(50) DEFAULT 'draft' NOT NULL,
+    starts_at TIMESTAMP WITH TIME ZONE,
+    ends_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_campaigns_advertiser_id ON campaigns (advertiser_id);
+CREATE INDEX idx_campaigns_status ON campaigns (status);
+
+CREATE TABLE line_items (
+    id SERIAL PRIMARY KEY,
+    campaign_id INTEGER NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    bid_amount_egp DECIMAL(10, 2) NOT NULL,
+    targeting_rules JSONB NOT NULL, -- {geo, lang, interests, hashtags}
+    creative_id INTEGER, -- Reference to creatives
+    
+    -- Budget & pacing
+    budget_egp DECIMAL(10, 2) NOT NULL,
+    spent_egp DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,
+    
+    -- Frequency caps
+    frequency_cap_daily INTEGER,
+    frequency_cap_lifetime INTEGER,
+    
+    -- Status
+    status VARCHAR(50) DEFAULT 'draft' NOT NULL,
+    starts_at TIMESTAMP WITH TIME ZONE,
+    ends_at TIMESTAMP WITH TIME ZONE,
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_line_items_campaign_id ON line_items (campaign_id);
+CREATE INDEX idx_line_items_status_dates ON line_items (status, starts_at, ends_at);
+
+CREATE TABLE ad_impressions (
+    id SERIAL PRIMARY KEY,
+    line_item_id INTEGER NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_ad_impressions_line_item_id_created_at ON ad_impressions (line_item_id, created_at DESC);
+
+CREATE TABLE ad_clicks (
+    id SERIAL PRIMARY KEY,
+    impression_id INTEGER REFERENCES ad_impressions(id) ON DELETE CASCADE,
+    line_item_id INTEGER NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_ad_clicks_line_item_id ON ad_clicks (line_item_id);
+
+-- Spend ledger for accurate accounting
+CREATE TABLE spend_ledger (
+    id SERIAL PRIMARY KEY,
+    line_item_id INTEGER NOT NULL REFERENCES line_items(id) ON DELETE CASCADE,
+    amount_egp DECIMAL(10, 2) NOT NULL,
+    event_type VARCHAR(50) NOT NULL, -- impression, click, view
+    event_id INTEGER NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX idx_spend_ledger_line_item_id ON spend_ledger (line_item_id);
+
+-- ============================================================================
+-- ANALYTICS OUTBOX (for ClickHouse)
+-- ============================================================================
+
+CREATE TABLE outbox_events (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+    processed_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_outbox_events_processed_at ON outbox_events (processed_at) WHERE processed_at IS NULL;
+
+-- ============================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- ============================================================================
+
+-- Enable RLS on sensitive tables
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE saves ENABLE ROW LEVEL SECURITY;
+
+-- Posts RLS: Users can see public posts, posts from users they follow, and their own posts
+CREATE POLICY posts_select_policy ON posts
+    FOR SELECT
+    USING (
+        visibility = 'public'
+        OR author_id = app_user_id()
+        OR (visibility = 'followers' AND EXISTS (
+            SELECT 1 FROM follows WHERE follower_id = app_user_id() AND followed_id = author_id
+        ))
+    );
+
+-- Posts INSERT: Users can only insert their own posts
+CREATE POLICY posts_insert_policy ON posts
+    FOR INSERT
+    WITH CHECK (author_id = app_user_id());
+
+-- Posts UPDATE: Users can only update their own posts
+CREATE POLICY posts_update_policy ON posts
+    FOR UPDATE
+    USING (author_id = app_user_id());
+
+-- Comments RLS: Similar to posts
+CREATE POLICY comments_select_policy ON comments
+    FOR SELECT
+    USING (
+        EXISTS (SELECT 1 FROM posts WHERE posts.id = comments.post_id)
+        OR author_id = app_user_id()
+    );
+
+CREATE POLICY comments_insert_policy ON comments
+    FOR INSERT
+    WITH CHECK (author_id = app_user_id());
+
+CREATE POLICY comments_update_policy ON comments
+    FOR UPDATE
+    USING (author_id = app_user_id());
+
+-- Messages RLS: Only thread members can see messages
+CREATE POLICY messages_select_policy ON messages
+    FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM thread_members 
+            WHERE thread_members.thread_id = messages.thread_id 
+            AND thread_members.user_id = app_user_id()
+        )
+    );
+
+CREATE POLICY messages_insert_policy ON messages
+    FOR INSERT
+    WITH CHECK (
+        sender_id = app_user_id()
+        AND EXISTS (
+            SELECT 1 FROM thread_members 
+            WHERE thread_members.thread_id = messages.thread_id 
+            AND thread_members.user_id = app_user_id()
+        )
+    );
+
+-- Reactions RLS
+CREATE POLICY reactions_select_policy ON reactions
+    FOR SELECT
+    USING (TRUE); -- All reactions are visible
+
+CREATE POLICY reactions_insert_policy ON reactions
+    FOR INSERT
+    WITH CHECK (user_id = app_user_id());
+
+CREATE POLICY reactions_delete_policy ON reactions
+    FOR DELETE
+    USING (user_id = app_user_id());
+
+-- Saves RLS
+CREATE POLICY saves_select_policy ON saves
+    FOR SELECT
+    USING (user_id = app_user_id());
+
+CREATE POLICY saves_insert_policy ON saves
+    FOR INSERT
+    WITH CHECK (user_id = app_user_id());
+
+CREATE POLICY saves_delete_policy ON saves
+    FOR DELETE
+    USING (user_id = app_user_id());
+
+-- ============================================================================
+-- TRIGGERS FOR UPDATING COUNTS
+-- ============================================================================
+
+-- Update follower/following counts
+CREATE OR REPLACE FUNCTION update_follow_counts() RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE users SET follower_count = follower_count + 1 WHERE id = NEW.followed_id;
+        UPDATE users SET following_count = following_count + 1 WHERE id = NEW.follower_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE users SET follower_count = GREATEST(0, follower_count - 1) WHERE id = OLD.followed_id;
+        UPDATE users SET following_count = GREATEST(0, following_count - 1) WHERE id = OLD.follower_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_follow_counts
+    AFTER INSERT OR DELETE ON follows
+    FOR EACH ROW EXECUTE FUNCTION update_follow_counts();
+
+-- Update post engagement counts
+CREATE OR REPLACE FUNCTION update_post_counts() RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_TABLE_NAME = 'reactions' THEN
+        IF TG_OP = 'INSERT' AND NEW.reaction_type = 'like' THEN
+            UPDATE posts SET likes_count = likes_count + 1 WHERE id = NEW.post_id;
+        ELSIF TG_OP = 'DELETE' AND OLD.reaction_type = 'like' THEN
+            UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = OLD.post_id;
+        ELSIF TG_OP = 'INSERT' AND NEW.reaction_type = 'save' THEN
+            UPDATE posts SET saves_count = saves_count + 1 WHERE id = NEW.post_id;
+        ELSIF TG_OP = 'DELETE' AND OLD.reaction_type = 'save' THEN
+            UPDATE posts SET saves_count = GREATEST(0, saves_count - 1) WHERE id = OLD.post_id;
+        END IF;
+    ELSIF TG_TABLE_NAME = 'comments' THEN
+        IF TG_OP = 'INSERT' THEN
+            UPDATE posts SET comments_count = comments_count + 1 WHERE id = NEW.post_id;
+        ELSIF TG_OP = 'DELETE' THEN
+            UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = OLD.post_id;
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_reaction_counts
+    AFTER INSERT OR DELETE ON reactions
+    FOR EACH ROW EXECUTE FUNCTION update_post_counts();
+
+CREATE TRIGGER trigger_update_comment_counts
+    AFTER INSERT OR DELETE ON comments
+    FOR EACH ROW EXECUTE FUNCTION update_post_counts();
+
+-- Update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trigger_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================================
+-- INITIAL DATA / DEFAULTS
+-- ============================================================================
+
+-- Add indexes for full-text search on Arabic content
+CREATE INDEX idx_posts_content_arabic_gin ON posts USING gin (content gin_trgm_ops);
+CREATE INDEX idx_users_display_name_gin ON users USING gin (display_name gin_trgm_ops);
+
+COMMENT ON TABLE users IS 'Core user accounts with creator features';
+COMMENT ON TABLE posts IS 'Main content table with RLS policies for visibility';
+COMMENT ON TABLE timeline_inbox IS 'Fanout cache for personalized feeds';
+COMMENT ON TABLE rec_candidates IS 'Fanin recommendations for explore/discovery';
+COMMENT ON FUNCTION app_user_id() IS 'Returns current authenticated user ID from session variable for RLS';
