@@ -1,4 +1,2 @@
-flask
-flask_sqlalchemy
-flask_migrate
-flask_cors
+fastapi
+uvicorn[standard]

@@ -8,7 +8,8 @@ import { router } from './router'
 import { useAuthStore } from './state/auth'
 import './index.css'
 
-const httpLink = createHttpLink({ uri: import.meta.env.VITE_API_URL + '/graphql' })
+const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
+const httpLink = createHttpLink({ uri: `${apiUrl}/graphql` })
 const authLink = setContext((_, { headers }) => {
   const token = useAuthStore.getState().token
   return { headers: { ...headers, authorization: token ? `Bearer ${token}` : '' } }
