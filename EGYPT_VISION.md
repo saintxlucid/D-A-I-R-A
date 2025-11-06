@@ -20,37 +20,201 @@ Global apps treat Arabic (especially Masry) as an afterthought. DAIRA treats it 
 
 ## Product Architecture
 
-### 1. Core Surfaces (Phase A: "Live & Magnetic")
+### 1. Core Surfaces
 
-#### Feed (Friends + For You)
+#### Home Feed (Friends + For You)
+- **Infinite scroll** with mixed media (text, image, video, carousel)
+- **Pinned posts** (announcements, events, important updates)
 - Hybrid fanout/fanin ranking
 - Data-saver defaults, AV1/low-bitrate ladder
 - **Tap-to-translate**: Arabizi ↔ عربي
 - **Inline dialect badges**: مصري/شامي/خليجي
 
 #### Reels (Masry First)
-- Duets/stitches with cultural context
+- **Vertical pager** (swipe up/down navigation)
+- **Creation tools**: Duet, stitch, green-screen, speed controls, timer, align
 - Sound library with Egyptian genres (mahraganat, rap, classics)
 - Rights-aware usage limits
 - On-video lyrics stickers with proper Arabic shaping
+- Duets/stitches with cultural context
+
+#### Stories (24h Ephemeral Content)
+- **Close friends "Circles (دواير)"** for selective sharing
+- **Highlights** (permanent story archives)
+- **Interactive stickers**: Music/lyrics, polls, Q&A, countdowns
+- Long-press to pause viewing
+- TTL 24h with auto-archive option
 
 #### Threads (Qahwa Threads)
 - Fast, witty text streams with inline media
+- **Quote posts** and **reposts** with commentary
+- **Nested replies** (threaded conversations)
+- **Link previews** with rich metadata
 - Quick-reply bar: emoji → Egyptian phrases
-- Quote-threading like Twitter/Threads
 
-#### Stories + Highlights
-- TTL 24h
-- Long-press pause
-- Close-friends "Circles (Dā'iraat)"
+#### Explore (Discovery Hub)
+- **Masonry grid** layout for visual browsing
+- **Topic rails**: Curated content by theme
+- **Discovery chips**: Sounds, places, hashtags, districts
+- Trending content by geographic location
+- Personalized recommendations
 
-#### Rooms (Majlis)
-- Lightweight topic rooms (football match, exam season, neighborhood alerts)
-- Auto daily digest post
+#### Profile
+- **Grid view** for posts
+- **Dedicated tabs**: Reels, Threads, Tagged content
+- **Highlights** section for story archives
+- **Link-in-bio** for creators/brands
+- **Verification badges** and user type indicators
+
+#### Messages (Direct Messaging)
+- **1:1 and group conversations**
+- **Voice notes** (primary communication method)
+- **Rich media**: Images, videos, GIFs
+- **Message replies** and **reactions**
+- Read receipts and typing indicators
+
+#### Rooms / Majlis (Topic-Based Chat)
+- **Topic-focused chat rooms** (football match, exam season, neighborhood alerts)
+- **Pinned posts** for important announcements
+- **Ephemeral "match rooms"** for live events
+- **Auto daily digest** posts summarizing activity
+
+#### Events
+- **Create and manage events** (campus gigs, local matches, screenings)
+- **RSVP functionality** with attendance tracking
+- **Reminders** and calendar integration
+- **Share to Rooms** for community engagement
+- Local venue discovery
+
+#### Saved & Collections
+- **Personal boards** for organizing saved content
+- **Private by default** with collaborative option
+- Categories: Recipes, notes, learning, inspiration
+- Search and filter within collections
+
+#### Live (Phase v2)
+- **Real-time streaming** with viewer interaction
+- **Comments and pinning** for moderation
+- **Guest mode** for collaborations
+- **Gifts** and monetization features
+- **Replay to Reels** and **clipping** tools
 
 ---
 
-### 2. Egyptian Differentiators (Built-in)
+### 2. Creation Suite
+
+#### Camera
+- **Front/back camera** switching
+- **Exposure controls** for lighting adjustment
+- **Grid and level guides** for composition
+- **Timer** for hands-free recording
+- **Beauty filters** and **HDR** mode
+
+#### Editing
+- **Trim, split, multi-clip** timeline
+- **Keyframes** for precise animations
+- **Speed ramp** (slow-motion, time-lapse)
+- **Color LUTs** for cinematic grading
+- Multi-layer editing support
+
+#### Audio
+- **Voiceover recording** with real-time preview
+- **Noise reduction** for clearer audio
+- **EQ presets** (voice, music, ambient)
+- **Auto-ducking** (background music volume adjustment)
+- Sound library integration
+
+#### Text & Captions
+- **Arabic shaping** support (proper RTL rendering)
+- **Text outlines** and shadow effects
+- **Auto-captions** in Arabic and English
+- Multiple font styles and animations
+- Stroke, gradient, and 3D text effects
+
+#### Stickers (Interactive Elements)
+- **Polls** (multiple choice voting)
+- **Quizzes** with right/wrong answers
+- **Countdown** timers for events
+- **Question box** for audience Q&A
+- **Location tags** with place discovery
+- **Mention stickers** (@username tags)
+
+#### Templates
+- **Beat-matched cuts** for music synchronization
+- **Ramadan/Eid frames** for seasonal content
+- **Football match overlays** for sports events
+- Pre-designed layouts for quick creation
+- Trend-based templates
+
+#### Cover Selector
+- **Frame picker** from video timeline
+- **Custom image upload** for covers
+- **Safe area guides** for text placement
+- Preview in different aspect ratios
+
+#### Drafts & Schedules
+- **Save drafts** for later editing
+- **Calendar slotting** for scheduled posts
+- **Optimal time hints** based on audience activity
+- Batch scheduling for multiple posts
+
+#### Rights & Credits
+- **Sound/source credit** attribution
+- **Collab tags** for featured creators
+- **Brand partnership tag** for sponsored content
+- Automatic usage tracking
+
+#### Accessibility
+- **Alt text** for images and videos
+- **High-contrast text styles** for readability
+- **Motion-safe presets** (reduced animations)
+- Screen reader optimization
+
+---
+
+### 3. Discovery & Search
+
+#### Search Engine
+- **Arabic + Arabizi analyzers** (diacritics-agnostic)
+- **Hashtag normalization** (#ElAhly / #الأهلي collapse)
+- **Smart search**: People, posts, sounds, places, tags
+- **Recent searches** and **saved searches**
+- **Type-ahead suggestions** with thumbnails
+
+#### Topic Hubs
+- **Curated rails** by theme (music, football, comedy, learning)
+- **Trending topics** with real-time updates
+- **Interest-based feeds** with personalization
+- Category pages with top creators
+
+#### District Trends
+- **Localized discovery**: Heliopolis, Maadi, Mohandessin, Alex Corniche
+- **Neighborhood-specific content** ranking
+- **Local events** and **business discovery**
+- Privacy-respecting location sharing
+
+#### Suggested Follows
+- **Affinity-based** recommendations
+- **Creator tiers** (verified, rising, local)
+- **Shared circles** discovery
+- Mutual connections display
+
+#### Sound Pages
+- **Usage graph** showing popularity over time
+- **Top clips** using the sound
+- **Remix tree** showing derivative content
+- Creator attribution and rights info
+
+#### Hashtag Pages
+- **Top posts** (most engagement)
+- **Recent posts** (chronological)
+- **Reels tab** for video content
+- **Threads tab** for text discussions
+- Usage statistics and trends
+
+---
+
+### 4. Egyptian Differentiators (Built-in)
 
 #### Masry Language Engine
 - **Arabizi Detection**: Detect and convert (e.g., "3ayez arou7" ↔ "عايز أروح")
@@ -81,7 +245,7 @@ Global apps treat Arabic (especially Masry) as an afterthought. DAIRA treats it 
 
 ---
 
-### 3. Creator Platform (Phase B: "Earn")
+### 5. Creator Platform (Phase B: "Earn")
 
 #### Tip Jar + Subscriptions (EGP-first)
 - Payouts in EGP
@@ -109,7 +273,7 @@ Global apps treat Arabic (especially Masry) as an afterthought. DAIRA treats it 
 
 ---
 
-### 4. Ads & SMB Growth (Phase C: "Scale")
+### 6. Ads & SMB Growth (Phase C: "Scale")
 
 #### Self-Serve Ads (EGP)
 - Simple objectives: Reach, Views, Clicks
@@ -134,7 +298,7 @@ Global apps treat Arabic (especially Masry) as an afterthought. DAIRA treats it 
 
 ---
 
-### 5. Advanced Features (Phase D: "Community")
+### 7. Advanced Features (Phase D: "Community")
 
 #### Groups → "Halaqat" (حلقات)
 - Lightweight communities with rules
