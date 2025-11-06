@@ -1,15 +1,38 @@
 # DAIRA - Social Media Platform
 
-A production-ready social media platform with TikTok/Threads/Instagram-inspired UX and a Facebook-inspired backend architecture. Built as a modern monorepo with Next.js, FastAPI, and GraphQL.
+A production-ready **social media platform** with TikTok/Threads/Instagram-inspired UX and a Facebook-inspired backend architecture. Built as a modern monorepo with Next.js, FastAPI, and GraphQL.
 
-## 🚀 Features
+**Platform Focus:**
+1. **🎯 Primary**: Social Media - Connect, share, and engage with your community
+2. **🎨 Secondary**: Content Creator Tools - Monetization, analytics, and creator features
+3. **📢 Tertiary**: Advertisement Platform - Brand partnerships and sponsored content
+
+## 🚀 Core Features
+
+### Social Media (Primary Focus)
+- **Social Networking**: Posts, comments, likes, follows, user profiles
+- **Real-time Engagement**: Live rooms, instant messaging, notifications
+- **Content Discovery**: Algorithmic feed, trending topics, hashtags
+- **Community Building**: Groups, threads, direct messaging
+- **RTL/LTR Support**: Full internationalization (Arabic & English)
+
+### Content Creator Platform (Secondary Focus)
+- **Creator Tools**: Analytics dashboard, audience insights, content scheduling
+- **Monetization**: Tips, subscriptions, exclusive content, brand deals
+- **Verification System**: Verified badges, creator tiers, reputation scores
+- **Growth Tools**: Cross-promotion, collaboration features, A/B testing
+
+### Advertisement Platform (Tertiary Focus)
+- **Sponsored Content**: Native ads, promoted posts, brand partnerships
+- **Targeting**: Demographic, interest-based, behavioral targeting
+- **Campaign Management**: Ad creation, scheduling, budget controls
+- **Analytics**: Impression tracking, engagement metrics, ROI reporting
+
+## 🛠 Technical Features
 
 - **Modern Web App**: Next.js 14 with TypeScript, PWA support, Tailwind CSS
-- **RTL/LTR Support**: Full internationalization with Arabic and English support
 - **GraphQL API**: FastAPI with Strawberry GraphQL for efficient data fetching
-- **Social Features**: Posts, comments, follows, user profiles
-- **Real-time**: Ready for WebSocket/Rooms integration
-- **Microservices Ready**: PostgreSQL, Redis, MinIO (S3), Redpanda (Kafka)
+- **Scalable Architecture**: Microservices-ready with PostgreSQL, Redis, MinIO (S3), Redpanda (Kafka)
 
 ## 📁 Project Structure
 
