@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import secrets
 
 
 class Settings(BaseSettings):
@@ -17,6 +18,12 @@ class Settings(BaseSettings):
     
     # Redpanda/Kafka
     KAFKA_BOOTSTRAP_SERVERS: str = "redpanda:9092"
+    
+    # JWT Authentication
+    JWT_SECRET_KEY: str = secrets.token_urlsafe(32)  # Generate secure default
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     # App
     APP_NAME: str = "DAIRA API"
