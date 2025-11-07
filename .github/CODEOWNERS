@@ -1,0 +1,19 @@
+# Code Owners
+
+# Global owners
+* @saintxlucid
+
+# Frontend
+/apps/web/ @saintxlucid
+/packages/ui/ @saintxlucid
+
+# Backend
+/apps/api/ @saintxlucid
+
+# Infrastructure
+/infra/ @saintxlucid
+/.github/ @saintxlucid
+
+# Documentation
+/docs/ @saintxlucid
+*.md @saintxlucid
