@@ -144,3 +144,61 @@ packages/backend/node_modules/
 .env
 .env.local
 >>>>>>> 0ff2ad0ea1aea1e5c79ab705916cdbc8e8c903d7
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+.pnpm-store/
+.pnpm-debug.log
+npm-debug.log*
+
+# pnpm
+pnpm-lock.yaml
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Build / Dist
+dist/
+build/
+out/
+
+# Prisma
+prisma/dev.db
+prisma/migrations/
+prisma/.tmp/
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+docker-data/
+*.tar
+
+# Local caches / temp
+tmp/
+.cache/
+.env.local
+.env.*.local
+
+# OS mount / workspace artifacts
+*.log
+*.pid
+*.seed
+
+# MinIO / storage local
+minio-data/
+
+# Windows workspace artefacts (network mounts)
+$RECYCLE.BIN/
+ehthumbs.db
+
+# Custom tracking
+.github/instructions/kluster-code-verify.instructions.md
+.kluster
