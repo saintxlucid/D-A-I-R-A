@@ -1,0 +1,52 @@
+type User {
+  id: ID!
+  username: String!
+  profiles: [Profile!]!
+}
+
+type Profile {
+  id: ID!
+  displayName: String!
+  role: ProfileRole!
+}
+
+enum ProfileRole {
+  PUBLIC
+  PRIVATE
+  CREATOR
+}
+
+type Post {
+  id: ID!
+  author: Profile!
+  content: String!
+  createdAt: DateTime!
+}
+
+type ProjectRoom {
+  id: ID!
+  name: String!
+  members: [Profile!]!
+}
+
+type Comment {
+  id: ID!
+  post: Post!
+  author: Profile!
+  content: String!
+  createdAt: DateTime!
+}
+
+type ReputationScore {
+  id: ID!
+  profile: Profile!
+  score: Int!
+}
+
+type Wallet {
+  id: ID!
+  user: User!
+  balance: Float!
+}
+
+scalar DateTime
