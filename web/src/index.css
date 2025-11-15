@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-neutral-800;
+  }
+  body {
+    @apply bg-black text-neutral-100;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-neutral-900/60 backdrop-blur-xl border border-neutral-800/50;
+  }
+  .gradient-brand {
+    @apply bg-gradient-to-r from-fuchsia-500 to-pink-500;
+  }
+}

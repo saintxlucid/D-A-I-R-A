@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # DAIRA Project
 
 ## Quick Start
@@ -32,3 +33,7 @@
    ```sh
    pytest backend/tests
    ```
+=======
+# D-A-I-R-A
+Social Media Platform
+>>>>>>> 5fac14aec2e889d20d335ab83a75465820e48f96

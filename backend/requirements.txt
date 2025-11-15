@@ -1,4 +1,5 @@
 fastapi
+<<<<<<< HEAD
 uvicorn
 sqlalchemy
 psycopg2-binary
@@ -13,3 +14,6 @@ prometheus-client
 sentry-sdk
 pytest
 httpx
+=======
+uvicorn[standard]
+>>>>>>> 5fac14aec2e889d20d335ab83a75465820e48f96
