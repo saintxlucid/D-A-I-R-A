@@ -1,34 +1,31 @@
 import React from 'react'
-import { useState } from 'react'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import useAuth from '@/hooks/useAuth'
 
-export function RegisterForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [username, setUsername] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
+const schema = z.object({
+  email: z.string().email(),
+  username: z.string().min(2),
+  password: z.string().min(6),
+})
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await register.mutateAsync({ email, password, username })
-    } catch (err) {
-      console.error('Register failed', err)
-    } finally {
-      setLoading(false)
-    }
+export function RegisterForm() {
+  const { register, handleSubmit, formState } = useForm({ resolver: zodResolver(schema) })
+  const { register: registerUser } = useAuth()
+
+  async function submit(values: any) {
+    await registerUser.mutateAsync(values)
   }
 
   return (
     <form onSubmit={submit} className="w-full">
-      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full rounded-md p-3 bg-neutral-900" required />
-      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Handle" className="w-full rounded-md p-3 bg-neutral-900 mt-3" required />
-      <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full rounded-md p-3 bg-neutral-900 mt-3" required />
+      <input type="email" {...register('email')} placeholder="Email" className="w-full rounded-md p-3 bg-neutral-900" />
+      <input type="text" {...register('username')} placeholder="Handle" className="w-full rounded-md p-3 bg-neutral-900 mt-3" />
+      <input type="password" {...register('password')} placeholder="Password" className="w-full rounded-md p-3 bg-neutral-900 mt-3" />
 
-      <button type="submit" className="mt-4 w-full rounded-md py-3 bg-green-600 text-white" disabled={loading}>
-        {loading ? 'Registering…' : 'Create account'}
+      <button type="submit" className="mt-4 w-full rounded-md py-3 bg-green-600 text-white" disabled={formState.isSubmitting}>
+        {formState.isSubmitting ? 'Registering…' : 'Create account'}
       </button>
     </form>
   )

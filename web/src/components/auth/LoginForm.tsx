@@ -1,39 +1,36 @@
 import React from 'react'
-import { useState } from 'react'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import useAuth from '@/hooks/useAuth'
 
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+})
+
 export function LoginForm() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const { register, handleSubmit, formState } = useForm({ resolver: zodResolver(schema) })
   const { login } = useAuth()
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      await login.mutateAsync({ email, password })
-    } catch (err) {
-      console.error('Login failed', err)
-    } finally {
-      setLoading(false)
-    }
+  async function submit(values: any) {
+    await login.mutateAsync(values)
   }
 
   return (
     <form onSubmit={submit} className="w-full">
       <label className="block">
         <span className="sr-only">Email</span>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full rounded-md p-3 bg-neutral-900" required />
+        <input type="email" {...register('email')} placeholder="Email" className="w-full rounded-md p-3 bg-neutral-900" />
       </label>
 
       <label className="block mt-3">
         <span className="sr-only">Password</span>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full rounded-md p-3 bg-neutral-900" required />
+        <input type="password" {...register('password')} placeholder="Password" className="w-full rounded-md p-3 bg-neutral-900" />
       </label>
 
-      <button type="submit" className="mt-4 w-full rounded-md py-3 bg-indigo-600 text-white" disabled={loading}>
-        {loading ? 'Signing in…' : 'Sign in'}
+      <button type="submit" className="mt-4 w-full rounded-md py-3 bg-indigo-600 text-white" disabled={formState.isSubmitting}>
+        {formState.isSubmitting ? 'Signing in…' : 'Sign in'}
       </button>
     </form>
   )
