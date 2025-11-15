@@ -28,6 +28,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'daira-auth',
+      // Persist only non-sensitive data; do NOT store tokens in localStorage to avoid XSS token exposure
+      partialize: (state) => ({ user: state.user }),
     }
   )
 )
