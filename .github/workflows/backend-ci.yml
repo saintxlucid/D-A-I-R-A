@@ -1,0 +1,46 @@
+name: Backend CI - Prisma & Tests
+
+on:
+  push:
+    branches: [ feat/identity-auth ]
+  pull_request:
+    branches: [ main, develop, feat/identity-auth ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://daira:daira@127.0.0.1:5432/daira_test?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: daira_test
+          POSTGRES_USER: daira
+          POSTGRES_PASSWORD: daira
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U daira -d daira_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=packages/backend/prisma/schema.prisma
+      - name: Apply Prisma schema
+        run: npx prisma db push --schema=packages/backend/prisma/schema.prisma --accept-data-loss
+      - name: Run backend tests
+        run: pnpm -w -r test --filter @daira/backend
