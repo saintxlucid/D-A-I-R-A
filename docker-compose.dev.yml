@@ -1,0 +1,45 @@
+version: '3.9'
+services:
+  backend:
+    build: ./packages/backend
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=development
+  frontend:
+    build: ./packages/frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: daira
+      POSTGRES_PASSWORD: daira_pwd
+      POSTGRES_DB: daira_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@daira.app
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+volumes:
+  pgdata:
+  redisdata:
