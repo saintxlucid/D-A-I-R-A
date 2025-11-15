@@ -1,0 +1,12 @@
+{
+  "name": "daira-core",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "pnpm --filter ./packages/backend... dev & pnpm --filter ./packages/frontend... dev",
+    "build": "pnpm --filter ./packages/backend... build && pnpm --filter ./packages/frontend... build",
+    "lint": "pnpm eslint . --ext .ts,.tsx",
+    "test": "pnpm jest --workspaces"
+  }
+}
