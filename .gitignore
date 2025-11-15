@@ -1,0 +1,26 @@
+# Node and package caches
+node_modules/
+.pnpm-store/
+.pnpm/
+.pnpm-debug.log
+pnpm-lock.yaml
+
+# npm cache
+.npm-cache/
+
+# temp files
+.tmp/
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Backend
+packages/backend/node_modules/
+
+# Secrets
+.env
+.env.local
