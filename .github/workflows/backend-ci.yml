@@ -12,6 +12,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://daira:daira@127.0.0.1:5432/daira_test?schema=public
       REDIS_URL: redis://127.0.0.1:6379
+      FRONTEND_URL: http://localhost:5173
     services:
       postgres:
         image: postgres:15
