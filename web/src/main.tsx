@@ -7,6 +7,8 @@ import { RouterProvider } from 'react-router-dom'
 import { router } from './router'
 import { useAuthStore } from './state/auth'
 import './index.css'
+import { useTokenSync } from './utils/tokenManager'
+import { useAutoRefresh } from './hooks/useAutoRefresh'
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:4000'
 const httpLink = createHttpLink({ uri: `${apiUrl}/graphql` })
@@ -15,9 +17,9 @@ const authLink = setContext((_, { headers }) => {
   return { headers: { ...headers, authorization: token ? `Bearer ${token}` : '' } }
 })
 
-export const apollo = new ApolloClient({ 
-  link: authLink.concat(httpLink), 
-  cache: new InMemoryCache() 
+export const apollo = new ApolloClient({
+  link: authLink.concat(httpLink),
+  cache: new InMemoryCache()
 })
 
 const queryClient = new QueryClient({
@@ -33,8 +35,16 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ApolloProvider client={apollo}>
+        {/* Keep tokens in sync across tabs */}
+        <TokenSync />
         <RouterProvider router={router} />
       </ApolloProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 )
+
+function TokenSync() {
+  useTokenSync()
+  useAutoRefresh()
+  return null
+}

@@ -3,12 +3,14 @@ import { API_URL } from './api'
 interface LoginDto {
   email: string
   password: string
+  deviceHash?: string
 }
 
 interface RegisterDto {
   email: string
   password: string
   username?: string
+  deviceHash?: string
 }
 
 export async function loginApi(dto: LoginDto) {
