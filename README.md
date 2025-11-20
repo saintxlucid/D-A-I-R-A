@@ -1,39 +1,32 @@
-<<<<<<< HEAD
-# DAIRA Project
-
-## Quick Start
-
-1. Clone the repo and install Docker & Docker Compose.
-2. Copy `.env.example` to `.env` and fill secrets.
-3. Run all services:
-   ```sh
-   docker compose up -d
-   ```
-4. Access API at http://localhost:4000/health
-
-## Structure
-- `backend/` — FastAPI, workers, migrations, config
-- `web/` — Frontend (React/Vite)
-- `sql/` — DB migrations
-- `docs/` — Architecture, API, features
-
-## Backend Setup
-- Python 3.10+
-- Install dependencies:
-   ```sh
-   pip install -r backend/requirements.txt
-   ```
-- Run API locally:
-   ```sh
-   uvicorn app:app --reload --port 4000
-   ```
-
-## Testing
-- Run tests:
-   ```sh
-   pytest backend/tests
-   ```
-=======
 # D-A-I-R-A
-Social Media Platform
->>>>>>> 5fac14aec2e889d20d335ab83a75465820e48f96
+
+D-A-I-R-A is a modular, enterprise-ready social media platform foundation built with NestJS (backend) and React (frontend). This monorepo contains a backend API, frontend UI, database schema, tests, and CI workflows.
+
+Quick links
+- Overview: `docs/PROJECT_OVERVIEW.md`
+- Developer setup: `docs/DEVELOPMENT.md`
+- Tracing & Observability: `docs/TRACING.md`
+- CI instructions: `docs/CI.md`
+- Observability & troubleshooting: `docs/OBSERVABILITY.md`
+- Contributing: `CONTRIBUTING.md`
+
+Getting started
+1. Install `pnpm` and Docker
+2. Start helper containers: `docker compose up -d postgres redis minio`
+3. Set environment variables and install dependencies as described in `docs/DEVELOPMENT.md`
+4. Start backend and frontend using `pnpm --filter ./packages/backend... dev` and `pnpm --filter ./web... dev`
+
+Project structure
+- `packages/backend/`: NestJS backend
+- `web/`: Vite + React frontend
+- `packages/backend/prisma`: Prisma schema
+- `packages/backend/test`: E2E tests using Jest + supertest
+- `docs/`: project docs
+- `scripts/`: helper scripts for platform-specific tooling
+
+Contributing
+See `CONTRIBUTING.md` for contribution and PR guidelines.
+
+License
+See `LICENSE` for licensing details.
+
