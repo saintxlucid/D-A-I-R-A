@@ -19,12 +19,12 @@ for i in $(seq 1 $MAX_RETRIES); do
     echo "✅ Postgres is ready (attempt $i/$MAX_RETRIES)"
     break
   fi
-  
+
   if [ $i -eq $MAX_RETRIES ]; then
     echo "❌ Postgres failed to start after $MAX_RETRIES retries"
     exit 1
   fi
-  
+
   echo "⏳ Postgres not ready yet (attempt $i/$MAX_RETRIES). Waiting ${RETRY_INTERVAL}s..."
   sleep "$RETRY_INTERVAL"
 done

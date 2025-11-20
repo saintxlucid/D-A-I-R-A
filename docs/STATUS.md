@@ -77,7 +77,7 @@
 
 ---
 
-### **WEEK 2: Frontend MVP** 
+### **WEEK 2: Frontend MVP**
 **Goal:** Ship authentication flows + feed (ready for beta users)
 
 | Epic | Key Tasks | Owner | Est. |

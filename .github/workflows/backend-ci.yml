@@ -49,7 +49,7 @@ jobs:
             fi
             echo "⏳ Postgres not ready ($i/30)"; sleep 2
           done
-          
+
           echo "Waiting for Redis at 127.0.0.1:6379..."
           for i in {1..30}; do
             if redis-cli -h 127.0.0.1 -p 6379 ping &>/dev/null; then
