@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/state/auth'
-import { loginApi, registerApi } from '@/lib/authApi'
+import { loginApi, registerApi, refreshApi } from '@/lib/authApi'
 import { getDeviceHash } from '@/utils/deviceFingerprint'
-import { saveTokens, clearTokens } from '@/utils/tokenManager'
+import { saveTokens, clearTokens, getAccessToken, getRefreshToken } from '@/utils/tokenManager'
 
 export function useAuth() {
   const setToken = useAuthStore((s) => s.setToken)
@@ -12,29 +12,88 @@ export function useAuth() {
   const navigate = useNavigate()
   const client = useQueryClient()
 
-  const login = useMutation((dto: any) => loginApi({ ...dto, deviceHash: getDeviceHash() }), {
-    onSuccess: (data: any) => {
-      const token = data.token || data.tokens?.accessToken || data.accessToken
-      const refresh = data.refreshToken || data.tokens?.refreshToken
-      setUser(data.user)
-      setToken(token)
-      saveTokens(token)
-      client.invalidateQueries(['me'])
-      navigate('/')
-    }
-  })
+  // Check auth on mount
+  const { isLoading: authLoading } = useQuery(
+    ['authStatus'],
+    async () => {
+      const token = getAccessToken()
+      if (token && !isTokenExpired(token)) {
+        return { authenticated: true }
+      }
+      const refreshToken = getRefreshToken()
+      if (refreshToken) {
+        try {
+          const response = await refreshApi(refreshToken)
+          setToken(response.accessToken)
+          saveTokens(response.accessToken, response.refreshToken)
+          return { authenticated: true }
+        } catch (error) {
+          clearTokens()
+          return { authenticated: false }
+        }
+      }
+      return { authenticated: false }
+    },
+    { staleTime: 5 * 60 * 1000, retry: false }
+  )
 
-  const register = useMutation((dto: any) => registerApi({ ...dto, deviceHash: getDeviceHash() }), {
-    onSuccess: (data: any) => {
-      const token = data.token || data.tokens?.accessToken
-      const refresh = data.refreshToken || data.tokens?.refreshToken
-      setUser(data.user)
-      setToken(token)
-      saveTokens(token)
-      client.invalidateQueries(['me'])
-      navigate('/')
+  const login = useMutation(
+    (dto: any) => loginApi({ ...dto, deviceHash: getDeviceHash() }),
+    {
+      onSuccess: (data: any) => {
+        const token = data.accessToken
+        const refresh = data.refreshToken
+        setUser(data.user || { id: data.userId, email: data.email })
+        setToken(token)
+        saveTokens(token, refresh)
+        client.invalidateQueries(['me'])
+        client.invalidateQueries(['authStatus'])
+        navigate('/')
+      },
+      onError: (error: any) => {
+        const message = error.response?.data?.message || 'Login failed'
+        console.error('Login error:', message)
+      }
     }
-  })
+  )
+
+  const register = useMutation(
+    (dto: any) => registerApi({ ...dto, deviceHash: getDeviceHash() }),
+    {
+      onSuccess: (data: any) => {
+        const token = data.accessToken
+        const refresh = data.refreshToken
+        setUser(data.user || { id: data.userId, email: data.email })
+        setToken(token)
+        saveTokens(token, refresh)
+        client.invalidateQueries(['me'])
+        client.invalidateQueries(['authStatus'])
+        navigate('/onboarding')
+      },
+      onError: (error: any) => {
+        const message = error.response?.data?.message || 'Registration failed'
+        console.error('Register error:', message)
+      }
+    }
+  )
+
+  const refresh = useMutation(
+    () => {
+      const token = getRefreshToken()
+      if (!token) throw new Error('No refresh token')
+      return refreshApi(token)
+    },
+    {
+      onSuccess: (data: any) => {
+        setToken(data.accessToken)
+        saveTokens(data.accessToken, data.refreshToken)
+        client.invalidateQueries(['authStatus'])
+      },
+      onError: () => {
+        logout()
+      }
+    }
+  )
 
   function logout() {
     signOut()
@@ -43,7 +102,16 @@ export function useAuth() {
     navigate('/login')
   }
 
-  return { login, register, logout }
+  return { login, register, refresh, logout, authLoading }
+}
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const decoded: any = JSON.parse(atob(token.split('.')[1]))
+    return decoded.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
 }
 
 export default useAuth

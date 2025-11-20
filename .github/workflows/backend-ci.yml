@@ -40,19 +40,42 @@ jobs:
         run: npm install -g pnpm@8
       - name: Install deps
         run: pnpm install --frozen-lockfile
-      - name: Generate Prisma client
-        run: npx prisma generate --schema=packages/backend/prisma/schema.prisma
-      - name: Wait for Postgres readiness
+      - name: Wait for services (Postgres + Redis)
         run: |
-          # Wait for postgres to become ready (pg_isready in container)
+          echo "Waiting for Postgres at 127.0.0.1:5432..."
           for i in {1..30}; do
-            if pg_isready -h 127.0.0.1 -p 5432 -U daira -d daira_test; then
-              echo "Postgres is ready"; break
+            if pg_isready -h 127.0.0.1 -p 5432 -U daira -d daira_test 2>/dev/null; then
+              echo "✅ Postgres ready (attempt $i)"; break
             fi
-            echo "Waiting for Postgres... ($i)"; sleep 2
+            echo "⏳ Postgres not ready ($i/30)"; sleep 2
+          done
+          
+          echo "Waiting for Redis at 127.0.0.1:6379..."
+          for i in {1..30}; do
+            if redis-cli -h 127.0.0.1 -p 6379 ping &>/dev/null; then
+              echo "✅ Redis ready (attempt $i)"; break
+            fi
+            echo "⏳ Redis not ready ($i/30)"; sleep 2
           done
 
-      - name: Apply Prisma schema
-        run: npx prisma db push --schema=packages/backend/prisma/schema.prisma --accept-data-loss
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=packages/backend/prisma/schema.prisma
+
+      - name: Apply Prisma schema (with retries)
+        run: |
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          until npx prisma db push --schema=packages/backend/prisma/schema.prisma --accept-data-loss --skip-generate; do
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+              echo "❌ Prisma db push failed after $MAX_RETRIES retries"
+              exit 1
+            fi
+            echo "⏳ Retrying Prisma db push ($RETRY_COUNT/$MAX_RETRIES)..."
+            sleep 3
+          done
+          echo "✅ Prisma schema applied successfully"
+
       - name: Run backend tests
-        run: pnpm -w -r test --filter ./packages/backend...
+        run: pnpm -w -r test --filter ./packages/backend... 2>&1
+        timeout-minutes: 15

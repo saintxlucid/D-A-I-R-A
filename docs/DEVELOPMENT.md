@@ -14,7 +14,7 @@ This guide walks through local development steps, starting services, running tes
 # From repository root (PowerShell):
 cd C:\Users\TOP\D-A-I-R-A
 docker compose up -d postgres redis minio
-``` 
+```
 
 2. Set required environment variables (for Windows PowerShell):
 
