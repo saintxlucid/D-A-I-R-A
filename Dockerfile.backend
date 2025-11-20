@@ -1,0 +1,58 @@
+# Multi-stage build for NestJS backend
+# Stage 1: Build
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy workspace files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/backend ./packages/backend
+COPY packages/shared ./packages/shared
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm@8.0.0 && \
+    pnpm install --frozen-lockfile
+
+# Build backend and shared packages
+RUN cd packages/backend && \
+    pnpm build
+
+# Generate Prisma client
+RUN cd packages/backend && \
+    pnpm prisma generate
+
+# Stage 2: Production Runtime
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dumb-init for proper process handling
+RUN apk add --no-cache dumb-init
+
+# Copy only necessary files from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/backend/dist ./dist
+COPY --from=builder /app/packages/backend/node_modules ./packages/backend/node_modules
+COPY --from=builder /app/packages/backend/prisma ./prisma
+COPY --from=builder /app/packages/shared ./packages/shared
+
+# Copy package.json for context
+COPY package.json ./
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+USER nestjs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["/sbin/dumb-init", "--"]
+
+# Start application
+CMD ["node", "dist/main.js"]
+
+EXPOSE 3000
