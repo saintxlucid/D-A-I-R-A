@@ -1,0 +1,54 @@
+{
+  "landing": {
+    "title": "Connect. Share. Grow.",
+    "subtitle": "Join the Egyptian community social network",
+    "cta_login": "Login",
+    "cta_register": "Sign Up",
+    "features_title": "Why D-A-I-R-A?",
+    "feature1": "Optimized for Egyptian networks",
+    "feature2": "100% encrypted & private",
+    "feature3": "Rapid-fire sharing & engagement"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "username": "Username",
+    "full_name": "Full Name",
+    "submit": "Submit",
+    "already_have_account": "Already have an account?",
+    "dont_have_account": "Don't have an account?",
+    "invalid_email": "Please enter a valid email",
+    "password_too_short": "Password must be at least 8 characters",
+    "passwords_dont_match": "Passwords don't match",
+    "username_taken": "Username already taken"
+  },
+  "feed": {
+    "title": "Feed",
+    "whats_on_mind": "What's on your mind?",
+    "post": "Post",
+    "posting": "Posting...",
+    "no_posts": "No posts yet. Follow users to see their posts!",
+    "character_limit": "Character limit reached"
+  },
+  "profile": {
+    "posts": "Posts",
+    "followers": "Followers",
+    "following": "Following",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "edit_profile": "Edit Profile",
+    "no_posts": "No posts yet"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred. Please try again.",
+    "success": "Success!",
+    "logout": "Logout",
+    "home": "Home",
+    "profile": "Profile",
+    "settings": "Settings"
+  }
+}
