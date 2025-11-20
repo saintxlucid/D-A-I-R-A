@@ -1,8 +1,8 @@
 # 🔒 API Hardening Blueprint
 
-**Phase:** Immediate Next (Post Identity-Auth)  
-**Duration:** 2–3 days  
-**Team:** 1–2 Backend Engineers  
+**Phase:** Immediate Next (Post Identity-Auth)
+**Duration:** 2–3 days
+**Team:** 1–2 Backend Engineers
 **Goal:** Production-ready API with performance, security, and reliability hardening
 
 ---
@@ -11,7 +11,7 @@
 
 ### A. Add Critical Indexes
 
-**File:** `packages/backend/prisma/schema.prisma` (update)  
+**File:** `packages/backend/prisma/schema.prisma` (update)
 **Then run:** `prisma migrate dev --name add-indexes`
 
 ```prisma
@@ -22,7 +22,7 @@ model User {
   email String @unique
   username String @unique
   // ... other fields
-  
+
   @@index([email])
   @@index([username])
 }
@@ -33,9 +33,9 @@ model Post {
   authorId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+
   @@index([authorId])
   @@index([createdAt])
   @@index([updatedAt])
@@ -46,10 +46,10 @@ model Follow {
   followerId String
   followingId String
   createdAt DateTime @default(now())
-  
+
   follower User @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
   following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
-  
+
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
@@ -62,10 +62,10 @@ model Comment {
   authorId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+
   @@index([postId])
   @@index([authorId])
 }
@@ -75,10 +75,10 @@ model Like {
   postId String
   authorId String
   createdAt DateTime @default(now())
-  
+
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  
+
   @@unique([postId, authorId])
   @@index([postId])
   @@index([authorId])
@@ -115,7 +115,7 @@ async getFeed(userId: string) {
     take: 20,
     orderBy: { createdAt: 'desc' }
   });
-  
+
   // N additional queries! (one per post)
   const enriched = posts.map(post => ({
     ...post,
@@ -145,7 +145,7 @@ async getFeed(userId: string) {
       }
     }
   });
-  
+
   return posts.map(post => ({
     ...post,
     likesCount: post._count.likes,
@@ -169,7 +169,7 @@ async getFeed(userId: string) {
       _count: { select: { likes: true, comments: true } }
     }
   });
-  
+
   // Fetch all likes for this user's posts in ONE query
   const userLikes = await prisma.like.findMany({
     where: {
@@ -178,9 +178,9 @@ async getFeed(userId: string) {
     },
     select: { postId: true }
   });
-  
+
   const likedPostIds = new Set(userLikes.map(l => l.postId));
-  
+
   return posts.map(post => ({
     ...post,
     likesCount: post._count.likes,
@@ -218,17 +218,17 @@ export class CacheService {
   async getFeed(userId: string, page: number = 0, pageSize: number = 20) {
     const cacheKey = `feed:${userId}:${page}:${pageSize}`;
     const cached = await this.redis.get(cacheKey);
-    
+
     if (cached) {
       return JSON.parse(cached);
     }
-    
+
     // Fetch from DB
     const feed = await this.postsService.getFeed(userId, page, pageSize);
-    
+
     // Cache for 1 minute
     await this.redis.setex(cacheKey, 60, JSON.stringify(feed));
-    
+
     return feed;
   }
 
@@ -243,14 +243,14 @@ export class CacheService {
   async getUserProfile(userId: string) {
     const cacheKey = `user:${userId}`;
     const cached = await this.redis.get(cacheKey);
-    
+
     if (cached) {
       return JSON.parse(cached);
     }
-    
+
     const user = await this.usersService.getProfile(userId);
     await this.redis.setex(cacheKey, 5 * 60, JSON.stringify(user)); // 5 min
-    
+
     return user;
   }
 
@@ -345,7 +345,7 @@ export class ZodValidationPipe implements PipeTransform {
 
   transform(value: unknown) {
     const result = this.schema.safeParse(value);
-    
+
     if (!result.success) {
       const errors = result.error.errors.map(e => ({
         path: e.path.join('.'),
@@ -353,7 +353,7 @@ export class ZodValidationPipe implements PipeTransform {
       }));
       throw new BadRequestException({ errors });
     }
-    
+
     return result.data;
   }
 }
@@ -399,7 +399,7 @@ export class RateLimitGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const userId = request.user?.id || request.ip;
-    
+
     // Different limits for different endpoints
     const endpoint = request.route.path;
     const limits = {
@@ -410,23 +410,23 @@ export class RateLimitGuard implements CanActivate {
       '/posts/:id/like': { max: 200, windowMs: 60 }, // 200 per minute
       default: { max: 100, windowMs: 60 }
     };
-    
+
     const limit = limits[endpoint] || limits['default'];
     const key = `rate-limit:${userId}:${endpoint}`;
-    
+
     const count = await this.redis.incr(key);
-    
+
     if (count === 1) {
       // First request, set expiry
       await this.redis.expire(key, limit.windowMs);
     }
-    
+
     if (count > limit.max) {
       throw new TooManyRequestsException(
         `Too many requests. Max ${limit.max} per ${limit.windowMs}s`
       );
     }
-    
+
     return true;
   }
 }
@@ -464,10 +464,10 @@ import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Security headers
   app.use(helmet());
-  
+
   // CORS - Only allow frontend origin
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   app.enableCors({
@@ -477,17 +477,17 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
     optionsSuccessStatus: 200
   });
-  
+
   // Global prefix
   app.setGlobalPrefix('api');
-  
+
   // Request logging middleware
   app.use((req, res, next) => {
     req.id = generateId(); // Or use uuid
     res.setHeader('X-Request-ID', req.id);
     next();
   });
-  
+
   await app.listen(3000);
   console.log(`Server running at http://localhost:3000`);
 }
@@ -549,23 +549,23 @@ export class ModerationService {
 
   async checkContent(content: string): Promise<{ isBlocked: boolean; reason?: string }> {
     const lowerContent = content.toLowerCase();
-    
+
     for (const keyword of this.blockedKeywords) {
       if (lowerContent.includes(keyword)) {
         return { isBlocked: true, reason: `Blocked keyword: ${keyword}` };
       }
     }
-    
+
     // Check for repeated characters (spam)
     if (/(.)\1{9,}/.test(content)) {
       return { isBlocked: true, reason: 'Repeated characters detected' };
     }
-    
+
     // Check for URL spam
     if ((content.match(/https?:\/\//g) || []).length > 3) {
       return { isBlocked: true, reason: 'Too many links' };
     }
-    
+
     return { isBlocked: false };
   }
 
@@ -611,20 +611,20 @@ export class ModerationService {
 async create(@Body() dto: CreatePostInput, @Request() req) {
   // Check content
   const { isBlocked, reason } = await this.moderationService.checkContent(dto.content);
-  
+
   if (isBlocked) {
     await this.moderationService.flagContent(
       'post-pending',
       'AUTO_FLAG',
       reason
     );
-    
+
     throw new BadRequestException({
       message: 'Your post contains prohibited content',
       reason
     });
   }
-  
+
   return this.postsService.create(req.user.id, dto);
 }
 ```
@@ -665,25 +665,25 @@ import * as request from 'supertest';
 
 describe('Performance Tests', () => {
   let app;
-  
+
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule]
     }).compile();
-    
+
     app = module.createNestApplication();
     await app.init();
   });
 
   it('GET /posts/feed should respond in <200ms', async () => {
     const token = await getAuthToken(); // Helper
-    
+
     const start = Date.now();
     const res = await request(app.getHttpServer())
       .get('/api/posts/feed')
       .set('Authorization', `Bearer ${token}`);
     const duration = Date.now() - start;
-    
+
     expect(res.status).toBe(200);
     expect(duration).toBeLessThan(200);
   });
@@ -691,7 +691,7 @@ describe('Performance Tests', () => {
   it('Concurrent requests should not exceed 500ms P95', async () => {
     const token = await getAuthToken();
     const durations = [];
-    
+
     for (let i = 0; i < 100; i++) {
       const start = Date.now();
       await request(app.getHttpServer())
@@ -699,10 +699,10 @@ describe('Performance Tests', () => {
         .set('Authorization', `Bearer ${token}`);
       durations.push(Date.now() - start);
     }
-    
+
     durations.sort((a, b) => a - b);
     const p95 = durations[Math.floor(durations.length * 0.95)];
-    
+
     expect(p95).toBeLessThan(500);
   });
 });
@@ -729,6 +729,6 @@ npm run test -- --testPathPattern=performance
 
 ---
 
-**Timeline:** 2–3 days (parallel with frontend)  
-**Checkpoint:** All tests passing, performance validated  
+**Timeline:** 2–3 days (parallel with frontend)
+**Checkpoint:** All tests passing, performance validated
 **Next Phase:** Production pipeline (staging, CI/CD)
