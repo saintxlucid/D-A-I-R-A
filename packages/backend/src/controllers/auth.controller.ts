@@ -37,4 +37,13 @@ export class AuthController {
     });
     return { accessToken };
   }
+
+  @Post('logout')
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const cookie = req.cookies['daira_refresh'];
+    await this.authService.logout(cookie);
+    // clear cookie
+    res.clearCookie('daira_refresh');
+    return { success: true };
+  }
 }

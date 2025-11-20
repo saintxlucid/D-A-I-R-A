@@ -1,0 +1,38 @@
+{
+  "name": "@daira/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p ./tsconfig.json",
+    "test": "jest --runInBand --detectOpenHandles"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "@types/supertest": "^2.0.12",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.5.2",
+    "supertest": "^7.1.4"
+    ,"@types/jsonwebtoken": "^9.0.0"
+  }
+  ,"dependencies": {
+    "@aws-sdk/client-s3": "^3.400.0",
+    "multer": "^1.4.5-lts.1",
+    "uuid": "^9.0.0"
+    ,"class-validator": "^0.14.2"
+    ,"class-transformer": "^0.5.1"
+    ,"jsonwebtoken": "^9.0.0"
+    ,"bcryptjs": "^2.4.3",
+      "@opentelemetry/sdk-node": "^0.43.0",
+      "@opentelemetry/instrumentation-http": "^0.43.0",
+      "@opentelemetry/instrumentation-express": "^0.43.0",
+      "@opentelemetry/instrumentation-redis-4": "^0.43.0",
+      "@opentelemetry/exporter-trace-otlp-http": "^0.43.0",
+      "@opentelemetry/api": "^1.9.0",
+      "@opentelemetry/sdk-trace-node": "^1.9.0",
+      "@opentelemetry/sdk-trace-base": "^1.9.0"
+  }
+
+
+}

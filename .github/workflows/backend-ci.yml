@@ -13,6 +13,7 @@ jobs:
       DATABASE_URL: postgresql://daira:daira@127.0.0.1:5432/daira_test?schema=public
       REDIS_URL: redis://127.0.0.1:6379
       FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: testsecret
     services:
       postgres:
         image: postgres:15
@@ -41,7 +42,17 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
         run: npx prisma generate --schema=packages/backend/prisma/schema.prisma
+      - name: Wait for Postgres readiness
+        run: |
+          # Wait for postgres to become ready (pg_isready in container)
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U daira -d daira_test; then
+              echo "Postgres is ready"; break
+            fi
+            echo "Waiting for Postgres... ($i)"; sleep 2
+          done
+
       - name: Apply Prisma schema
         run: npx prisma db push --schema=packages/backend/prisma/schema.prisma --accept-data-loss
       - name: Run backend tests
-        run: pnpm -w -r test --filter @daira/backend
+        run: pnpm -w -r test --filter ./packages/backend...

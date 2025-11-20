@@ -4,13 +4,13 @@ This folder contains the frontend auth helpers and components used by the DAIRA 
 
 Files:
 - `web/src/lib/authApi.ts` — small REST helper to POST to `/auth/login` and `/auth/register`.
- 
+
 - `web/src/hooks/useAuth.ts` — React Query mutation hooks for login/register, plus `logout()`.
- 
+
 - `web/src/utils/tokenManager.ts` — tokens are intentionally kept in memory (Zustand store) to reduce XSS risks; refresh tokens should be stored by the backend in HTTP-only cookies.
- 
+
 - `web/src/components/auth/LoginForm.tsx` — small login form using `useAuth`.
- 
+
 - `web/src/components/auth/RegisterForm.tsx` — small register form using `useAuth`.
 
 Security notes:

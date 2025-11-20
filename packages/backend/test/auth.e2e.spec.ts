@@ -11,10 +11,9 @@ describe('Auth E2E', () => {
   it('POST /auth/signup, login, refresh', async () => {
     const agent = request.agent(app.getHttpServer());
 
-    const res = await agent
-      .post('/auth/signup')
-      .send({ email: 'test@example.com', password: 'password' });
-    expect(res.body).toEqual({ id: '1', email: 'test@example.com' });
+    const res = await agent.post('/auth/signup').send({ email: 'test@example.com', password: 'password' });
+    expect(res.body.email).toBe('test@example.com');
+    expect(res.body.id).toBeDefined();
 
     const login = await agent
       .post('/auth/login')
@@ -23,6 +22,11 @@ describe('Auth E2E', () => {
 
     const refresh = await agent.post('/auth/refresh');
     expect(refresh.body.accessToken).toBeDefined();
+    
+    // Logout should clear the session and refresh should fail
+    await agent.post('/auth/logout');
+    const refresh2 = await agent.post('/auth/refresh');
+    expect(refresh2.status).toBe(401);
   });
   afterAll(async () => {
     await app.close();

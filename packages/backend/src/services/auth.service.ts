@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { User } from '../types/user';
 import { PrismaClient } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
+import { UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
 const prisma = new PrismaClient();
@@ -9,13 +11,20 @@ const prisma = new PrismaClient();
 @Injectable()
 export class AuthService {
   async signup(email: string, password: string): Promise<User> {
-    // TODO: Hash password, save user to DB
-    return { id: '1', email };
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashed,
+        profiles: { create: [{ type: 'PUBLIC' }, { type: 'PRIVATE' }] },
+      },
+    });
+    return { id: user.id, email: user.email };
   }
 
   async login(email: string, password: string) {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.password !== password) throw new Error('Invalid credentials');
+    if (!user || !(await bcrypt.compare(password, user.password))) throw new UnauthorizedException('Invalid credentials');
     const accessToken = jwt.sign({ sub: user.id }, process.env.JWT_SECRET!, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ sub: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
     // store hashed refresh in sessions table
@@ -39,7 +48,14 @@ export class AuthService {
       const accessToken = jwt.sign({ sub: userId }, process.env.JWT_SECRET!, { expiresIn: '15m' });
       return { accessToken, refreshToken: newRefresh };
     } catch (err) {
-      throw new Error('Invalid refresh token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  async logout(cookie: string) {
+    if (!cookie) return;
+    const hashed = crypto.createHash('sha256').update(cookie).digest('hex');
+    await prisma.session.deleteMany({ where: { token: hashed } });
+    return { success: true };
   }
 }

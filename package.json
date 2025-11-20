@@ -9,10 +9,13 @@
     "dev": "pnpm --filter ./packages/backend... dev & pnpm --filter ./packages/frontend... dev",
     "build": "pnpm --filter ./packages/backend... build && pnpm --filter ./packages/frontend... build",
     "lint": "pnpm eslint . --ext .ts,.tsx",
-    "test": "pnpm jest --workspaces"
+    "test": "pnpm -w -r test --filter ./packages/backend..."
   },
   "devDependencies": {
-    "prisma": "6.19.0"
+    "prisma": "6.19.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
   },
   "dependencies": {
     "@prisma/client": "6.19.0"
