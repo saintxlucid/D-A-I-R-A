@@ -1,41 +1,47 @@
-import React, { useState } from 'react'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate, Link } from 'react-router-dom'
-import useAuth from '@/hooks/useAuth'
+import React, { useState } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuthStore } from '../../lib/auth/useAuth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address').min(1, 'Email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters').min(1, 'Password is required'),
-})
+  password: z.string().min(8, 'Password must be at least 8 characters').min(1, 'Password is required'),
+});
 
-type LoginFormValues = z.infer<typeof loginSchema>
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
-  onSuccess?: () => void
+  onSuccess?: () => void;
 }
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<LoginFormValues>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     mode: 'onBlur',
-  })
-  const { login } = useAuth()
-  const navigate = useNavigate()
-  const [apiError, setApiError] = useState<string | null>(null)
+  });
+
+  const login = useAuthStore((s) => s.login);
+  const navigate = useNavigate();
+  const [apiError, setApiError] = useState<string | null>(null);
 
   async function submit(values: LoginFormValues) {
     try {
-      setApiError(null)
-      await login.mutateAsync(values)
-      reset()
-      onSuccess?.()
-      navigate('/')
+      setApiError(null);
+      await login(values.email, values.password);
+      reset();
+      onSuccess?.();
+      navigate('/feed');
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || 'Login failed. Please try again.'
-      setApiError(message)
-      console.error('Login error:', error)
+      const message = error.message || 'Login failed. Please try again.';
+      setApiError(message);
+      console.error('Login error:', error);
     }
   }
 
@@ -100,9 +106,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
         </Link>
       </div>
     </form>
-  )
+  );
 }
 
-export default LoginForm
-
-export default LoginForm
+export default LoginForm;
