@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: daira-config
+  namespace: default
+data:
+  NODE_ENV: 'production'
+  REDIS_HOST: 'daira-redis'
+  REDIS_PORT: '6379'
+  QDRANT_URL: 'http://daira-qdrant:6333'
+  SCYLLA_HOSTS: 'daira-scylla:9042'
+  LOG_LEVEL: 'debug'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: daira-secrets
+  namespace: default
+type: Opaque
+stringData:
+  database-url: 'postgresql://postgres:postgres@daira-postgres:5432/daira'
+  jwt-secret: 'your-secret-key-here-change-in-production'
+  redis-password: 'redis'
+  cloudflare-r2-endpoint: ''
+  aws-access-key: ''
+  aws-secret-key: ''

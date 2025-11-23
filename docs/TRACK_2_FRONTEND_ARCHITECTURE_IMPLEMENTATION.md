@@ -1,9 +1,9 @@
 # Track 2: Frontend Architecture Implementation (Weeks 1-4)
 
-**Owner:** Frontend Lead + UI/UX  
-**Timeline:** 28 days (parallel with legal/video tracks)  
-**Budget:** $0 (all open source)  
-**Goal:** <100KB bundle, RTL-first Arabic, optimized for 4GB RAM devices  
+**Owner:** Frontend Lead + UI/UX
+**Timeline:** 28 days (parallel with legal/video tracks)
+**Budget:** $0 (all open source)
+**Goal:** <100KB bundle, RTL-first Arabic, optimized for 4GB RAM devices
 
 ---
 
@@ -66,7 +66,7 @@ export default {
     // RTL plugin: automatically mirrors margin/padding/etc
     plugin(function ({ addUtilities, e, theme }) {
       const rtlUtilities = {}
-      
+
       // Mirror margin utilities for RTL
       Object.entries(theme('margin')).forEach(([key, value]) => {
         rtlUtilities[`.rtl .${e(`ml-${key}`).substring(1)}`] = {
@@ -287,7 +287,7 @@ interface RTLWrapperProps {
 
 export const RTLWrapper: React.FC<RTLWrapperProps> = ({ children }) => {
   const isRTL = useRTL()
-  
+
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} lang={isRTL ? 'ar-EG' : 'en'}>
       {children}
@@ -494,7 +494,7 @@ export const OptimizedImage: React.FC<OptimizedImageProps> = ({
     <picture>
       {/* WebP for modern browsers */}
       <source srcSet={webpSrc} type="image/webp" />
-      
+
       {/* JPEG fallback */}
       <img
         src={src}
@@ -640,7 +640,7 @@ export const normalizeArabic = (text: string): string => {
  */
 export const tokenizeArabic = (text: string): string[] => {
   const normalized = normalizeArabic(text)
-  
+
   // Split on spaces, punctuation
   return normalized
     .split(/[\s\.,،؛:؟!،\-]+/)

@@ -21,19 +21,19 @@ This document details the **exhaustive feature inventory** for building a TikTok
 class AuthService {
   // Primary: JWT + Refresh Tokens
   async login(credentials): Promise<{ accessToken, refreshToken }> {}
-  
+
   // SMS/WhatsApp OTP for MFA
   async sendOTP(phoneNumber): Promise<void> {}
   async verifyOTP(phoneNumber, code): Promise<boolean> {}
-  
+
   // Flash Call (Sinch/CEQUENS) - Egypt-specific
   async initiateFlashCall(phoneNumber): Promise<callId> {}
   async verifyFlashCall(callId, missedCallTime): Promise<boolean> {}
-  
+
   // WhatsApp Business API Fallback
   async sendWhatsAppOTP(phoneNumber): Promise<void> {}
   async verifyWhatsAppOTP(phoneNumber, code): Promise<boolean> {}
-  
+
   // Biometric (fingerprint/face recognition)
   async enrollBiometric(userId, biometricData): Promise<void> {}
   async verifyBiometric(userId, biometricData): Promise<boolean> {}
@@ -46,15 +46,15 @@ class UserProfileService {
   // User Handle (@username)
   async createHandle(userId, handle): Promise<Profile> {}
   async validateHandleUniqueness(handle): Promise<boolean> {}
-  
+
   // Profile Picture (with compression)
   async uploadProfilePicture(userId, imageFile): Promise<url> {}
   async generateThumbnails(imageUrl): Promise<thumbnails> {} // 200x200, 400x400
-  
+
   // Bio & Link in Bio
   async updateBio(userId, bio): Promise<void> {}
   async updateLinkInBio(userId, links): Promise<void> {}
-  
+
   // Privacy Settings
   async makeAccountPrivate(userId): Promise<void> {}
   async createCloseFriendsList(userId, friendIds): Promise<void> {}
@@ -70,18 +70,18 @@ class RelationshipService {
   async rejectFriendRequest(requestId): Promise<void> {}
   async removeFriend(userId, friendId): Promise<void> {}
   async getFriends(userId, limit): Promise<User[]> {}
-  
+
   // Interest Graph (Unidirectional) - Instagram/TikTok Style
   async followUser(followerId, followeeId): Promise<void> {}
   async unfollowUser(followerId, followeeId): Promise<void> {}
   async getFollowers(userId, limit): Promise<User[]> {}
   async getFollowing(userId, limit): Promise<User[]> {}
-  
+
   // Blocking & Shadowban
   async blockUser(userId, blockedUserId): Promise<void> {}
   async unblockUser(userId, blockedUserId): Promise<void> {}
   async shadowbanUser(userId): Promise<void> {} // Content hidden from discovery
-  
+
   // Muting (soft delete relationships)
   async muteUser(userId, mutedUserId): Promise<void> {}
   async unmuteUser(userId, mutedUserId): Promise<void> {}
@@ -109,17 +109,17 @@ class ShortFormVideoService {
     likes: number
     shares: number
   }
-  
+
   // Create Short-Form Video
   async createShortFormVideo(
     userId,
     videoFile,
     metadata: VideoMetadata
   ): Promise<Video> {}
-  
+
   // Auto-looping & Infinite Scroll
   async getNextVideos(userId, currentVideoId, limit: 10): Promise<Video[]> {}
-  
+
   // Pre-fetching (Download next 3 videos in background)
   async prefetchNextVideos(userId, currentVideoId): Promise<void> {
     // Triggered when user opens app
@@ -140,23 +140,23 @@ class FeedPostService {
     engagement: Engagement
     visibility: 'public' | 'friends' | 'close-friends'
   }
-  
+
   interface PostContent {
     text: RichText // mentions, hashtags
     images?: CarouselImage[] // multi-image support
     video?: VideoAttachment
   }
-  
+
   // Create Post (with optimistic UI)
   async createPost(userId, content): Promise<FeedPost> {
     // Returns immediately with temporary ID
     // Uploads in background
     // Marked as "pending" in UI until confirmed
   }
-  
+
   // Carousel Images
   async uploadCarouselImage(postId, imageFile): Promise<Image> {}
-  
+
   // Rich Text (Mentions & Hashtags)
   async parseRichText(text: string): Promise<ParsedText> {
     // Extract @mentions and #hashtags
@@ -177,24 +177,24 @@ class StoriesService {
     views: string[] // list of viewer user IDs
     viewers: User[]
   }
-  
+
   // Create Story (24h ephemeral)
   async createStory(userId, mediaFile): Promise<Story> {}
-  
+
   // Story Ring Indicator
   async getStoriesWithRings(userId): Promise<StoryRing[]> {
     // Returns friends with active stories + unviewed indicator
   }
-  
+
   // View Tracking (Write-Heavy Operation)
   async recordStoryView(storyId, viewerId): Promise<void> {
     // Append viewerId to story.views list
     // Use Redis for write-heavy operations
   }
-  
+
   // Get Story Viewers
   async getStoryViewers(storyId): Promise<User[]> {}
-  
+
   // Auto-Expiry (Cron Job)
   @Cron('0 * * * *') // Every hour
   async expireOldStories(): Promise<void> {
@@ -216,13 +216,13 @@ class ThreadsService {
     likes: number
     parentThreadId?: string // null if root-level reply
   }
-  
+
   // Create Reply (Quote Tweet / Nested Reply)
   async createReply(userId, parentThreadId, text): Promise<Thread> {}
-  
+
   // Quote Tweet (Share with Commentary)
   async createQuote(userId, originalThreadId, commentary): Promise<Thread> {}
-  
+
   // Recursive Thread Fetching
   async getThreadWithReplies(threadId, depth: 3): Promise<Thread> {
     // Fetch thread + replies up to depth N
@@ -242,13 +242,13 @@ class InteractionService {
   async removeLike(userId, contentId): Promise<void> {}
   async getLikersCount(contentId): Promise<number> {}
   async getLikers(contentId, limit: 50): Promise<User[]> {}
-  
+
   // Heavy Reactions (Comments with Text)
   async createComment(userId, contentId, text): Promise<Comment> {}
   async editComment(commentId, newText): Promise<void> {}
   async deleteComment(commentId): Promise<void> {}
   async getReplies(commentId, limit: 50): Promise<Comment[]> {}
-  
+
   // Share (Rebroadcast)
   async shareContent(userId, contentId, contentType): Promise<void> {
     // Creates reference post: "User shared a video by Author"
@@ -268,31 +268,31 @@ class MessagingService {
     readAt?: Date
     reactions?: Reaction[] // emoji reactions on messages
   }
-  
+
   interface Conversation {
     id: string
     participants: string[] // 1:1 or group
     lastMessageAt: Date
     unreadCount: Map<userId, count>
   }
-  
+
   // 1:1 Messaging
   async sendDirectMessage(fromUserId, toUserId, message): Promise<DirectMessage> {}
   async getConversation(conversationId, limit: 50): Promise<DirectMessage[]> {}
-  
+
   // Group Chat
   async createGroupChat(creatorId, participantIds, groupName): Promise<Conversation> {}
   async addParticipantToGroup(groupId, participantId): Promise<void> {}
   async removeParticipantFromGroup(groupId, participantId): Promise<void> {}
-  
+
   // Online/Offline Presence (Heartbeat)
   async setUserPresence(userId, status: 'online'|'offline'): Promise<void> {
     // Client sends heartbeat every 30 seconds
     // Server sets Redis key: user:presence:{userId} = 'online' + expiry 60s
   }
-  
+
   async getUserPresence(userId): Promise<'online'|'offline'> {}
-  
+
   // Typing Indicators (Ephemeral WebSocket Events)
   async broadcastTypingIndicator(conversationId, userId, isTyping: boolean): Promise<void> {
     // Emit via Socket.IO: typing:{conversationId} = { userId, isTyping, timestamp }
@@ -312,12 +312,12 @@ class NotificationService {
     readAt?: Date
     createdAt: Date
   }
-  
+
   // In-App Activity Feed
   async getActivityFeed(userId, limit: 50): Promise<Notification[]> {}
   async markAsRead(notificationId): Promise<void> {}
   async markAllAsRead(userId): Promise<void> {}
-  
+
   // Push Notifications (FCM/APNs)
   async sendPushNotification(userId, title, body, deepLink): Promise<void> {
     // Firebase Cloud Messaging (Android)
@@ -337,17 +337,17 @@ class SearchService {
   async searchUsers(query: string, limit: 50): Promise<User[]> {
     // Typo-tolerant search on handles, names, bios
   }
-  
+
   // Hashtag Search
   async searchHashtags(query: string): Promise<Hashtag[]> {
     // Returns trending hashtags matching query
   }
-  
+
   // Audio Search (Videos Using Specific Sound)
   async searchByAudio(audioId: string): Promise<Video[]> {
     // Filter videos by sound_id
   }
-  
+
   // Content Search (Full-Text)
   async searchContent(query: string): Promise<(Video|Post|Thread)[]> {}
 }
@@ -362,12 +362,12 @@ class RecommendationEngineService {
     embedding: number[] // [0.1, 0.8, 0.3, ...] from OpenCLIP
     tags: string[] // 'Cats', 'Funny', 'Outdoor'
   }
-  
+
   interface UserVector {
     userId: string
     embedding: number[] // Updated on each watch
   }
-  
+
   // Video Tower: Generate Embeddings
   async generateVideoEmbedding(videoId, videoFrames, caption): Promise<VideoVector> {
     // Use OpenAI CLIP or similar model
@@ -375,21 +375,21 @@ class RecommendationEngineService {
     // Combine with caption text
     // Output 512-d vector
   }
-  
+
   // User Tower: Update User Vector
   async updateUserVector(userId, watchedVideoId, watchDuration, isComplete): Promise<void> {
     // Get video vector
     // Adjust user vector: user_vector += 0.1 * (video_vector - user_vector)
     // This moves user vector closer to liked videos
   }
-  
+
   // Query for Personalized Feed
   async getForYouFeed(userId, limit: 50): Promise<Video[]> {
     // Query Qdrant: Find 50 videos closest to user_vector
     // Rank by: cosine_similarity + recency + engagement + diversity
     // Return ordered list
   }
-  
+
   // Trending Algorithm (Time-Decay)
   async getTrendingVideos(timeWindow: '1h'|'24h'|'7d', limit: 50): Promise<Video[]> {
     // Score = (likes + views + shares) * exp(-decay * hours_old)
@@ -436,10 +436,10 @@ With 500+ followers, this query becomes O(N*M) - expensive and slow.
 @Post('posts')
 async createPost(userId, content) {
   const post = await db.posts.create({ authorId: userId, content });
-  
+
   // Step 2: Trigger async job
   await queue.add('fan-out-post', { postId: post.id, authorId: userId });
-  
+
   return post;
 }
 
@@ -447,10 +447,10 @@ async createPost(userId, content) {
 BullMQ Worker ('fan-out-post'):
   - Query followers of authorId
   - For each follower, LPUSH to Redis feed list
-  
+
 async fanOutPost(postId, authorId) {
   const followers = await db.followers.findAll({ followeeId: authorId });
-  
+
   for (const follower of followers) {
     await redis.lpush(`feed:user:${follower.id}`, postId);
     // Also trim to keep only last 1000 posts
@@ -487,7 +487,7 @@ Raw 50MB MP4 file → 3G in Cairo = buffering, quitting users.
 class VideoUploadService {
   // tus.io protocol: split file into chunks
   // If connection drops at 99%, resume from chunk N (not restart)
-  
+
   async initiateUpload(userId, videoFile): Promise<uploadUrl> {
     const uploadSession = {
       id: uuid(),
@@ -497,10 +497,10 @@ class VideoUploadService {
       uploadedBytes: 0,
       expiresAt: now + 24h
     };
-    
+
     return `https://upload.server/files/${uploadSession.id}`;
   }
-  
+
   async chunkUpload(uploadSessionId, chunkIndex, chunkData): Promise<void> {
     // Append chunk to file in progress
     // Resume-able: if connection breaks, client reupload from chunkIndex+1
@@ -511,17 +511,17 @@ class VideoUploadService {
 BullMQ Worker ('video-transcoding'):
 async transcodeVideo(jobData) {
   const { videoId, uploadedFilePath } = jobData;
-  
+
   // Spawn FFmpeg process
   // Input: MP4 (raw upload)
   // Output: HLS variants
-  
+
   const variants = [
     { bitrate: '5000k', resolution: '1920x1080', label: '1080p' },
     { bitrate: '2500k', resolution: '1280x720', label: '720p' },
     { bitrate: '1000k', resolution: '640x360', label: '360p' },
   ];
-  
+
   for (const variant of variants) {
     await ffmpeg.exec([
       '-i', uploadedFilePath,
@@ -533,10 +533,10 @@ async transcodeVideo(jobData) {
       `output/${videoId}/${variant.label}/playlist.m3u8`
     ]);
   }
-  
+
   // Upload HLS segments to R2 (Cloudflare)
   await uploadHLSToR2(videoId);
-  
+
   // Mark video as ready
   await db.videos.update(videoId, { status: 'PUBLISHED', hlsUrl: ... });
 }
@@ -545,7 +545,7 @@ async transcodeVideo(jobData) {
 class VideoPlaybackService {
   async playVideo(videoId) {
     const hlsUrl = `https://cdn.r2.io/videos/${videoId}/playlist.m3u8`;
-    
+
     // React Native Video Player detects bandwidth
     // Auto-switches quality without pausing:
     // Fast connection (5mbps) → 1080p
@@ -585,16 +585,16 @@ class TwoTowerRecommendationService {
     const video = await db.videos.findById(videoId);
     const videoFrames = await extractFrames(video.filePath);
     const caption = video.caption;
-    
+
     // Use OpenAI CLIP (or open-source alternative)
     // CLIP encodes images and text into shared vector space
-    
+
     const imageEmbedding = await clip.encodeImage(videoFrames[0]); // [0.1, 0.8, ...]
     const textEmbedding = await clip.encodeText(caption);
-    
+
     // Average them
     const combinedEmbedding = average([imageEmbedding, textEmbedding]);
-    
+
     // Store in Qdrant
     await qdrant.upsert({
       id: videoId,
@@ -606,35 +606,35 @@ class TwoTowerRecommendationService {
       }
     });
   }
-  
+
   // The User Tower: Update User Vector on Watch
   async updateUserVector(userId: string, watchedVideoId: string, watchDuration: number): Promise<void> {
     const isComplete = watchDuration >= video.duration * 0.8; // 80%+ watched
-    
+
     if (!isComplete) return; // Only learn from completed watches
-    
+
     // Fetch current user vector
     let userVector = await redis.getJSON(`user:vector:${userId}`) || initializeZeroVector();
-    
+
     // Fetch video vector
     const videoVector = await qdrant.retrieve(watchedVideoId);
-    
+
     // Update rule: Move user vector closer to video vector
     // user_vector += learning_rate * (video_vector - user_vector)
     const learningRate = 0.1;
-    userVector = userVector.map((val, i) => 
+    userVector = userVector.map((val, i) =>
       val + learningRate * (videoVector[i] - val)
     );
-    
+
     // Store updated user vector
     await redis.setJSON(`user:vector:${userId}`, userVector);
   }
-  
+
   // Query: Get For You Feed
   async getForYouFeed(userId: string, limit: number = 50): Promise<Video[]> {
     // Fetch user vector
     const userVector = await redis.getJSON(`user:vector:${userId}`) || initializeZeroVector();
-    
+
     // Query Qdrant: Find 50 closest vectors
     const results = await qdrant.search({
       vector: userVector,
@@ -646,12 +646,12 @@ class TwoTowerRecommendationService {
         ]
       }
     });
-    
+
     // Rank by: similarity + recency + engagement + diversity
     const ranked = results
       .map(r => ({
         ...r,
-        score: 
+        score:
           0.5 * r.similarity +
           0.2 * recencyScore(r.payload.createdAt) +
           0.2 * engagementScore(r.payload) +
@@ -659,7 +659,7 @@ class TwoTowerRecommendationService {
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, limit);
-    
+
     return ranked.map(r => db.videos.findById(r.id));
   }
 }
@@ -683,30 +683,30 @@ class DataSaverModeService {
     preferredQuality: '1080p' | '720p' | '360p' | 'auto';
     autoPlayEnabled: boolean;
   }
-  
+
   @Get('videos/:id/playlist')
   async getHLSPlaylist(userId, videoId) {
     const settings = await getUserSettings(userId);
-    
+
     if (settings.dataSaverEnabled) {
       // Force 360p stream
       return `https://cdn.r2.io/videos/${videoId}/360p/playlist.m3u8`;
     }
-    
+
     // Normal: return master playlist with all variants
     return `https://cdn.r2.io/videos/${videoId}/master.m3u8`;
   }
-  
+
   @Get('feed')
   async getFeed(userId) {
     const settings = await getUserSettings(userId);
     const feed = await this.feedService.getUserFeed(userId);
-    
+
     if (settings.dataSaverEnabled) {
       // Disable auto-play: videos only play when user taps
       return feed.map(v => ({ ...v, autoPlay: false }));
     }
-    
+
     return feed;
   }
 }
@@ -747,53 +747,53 @@ class EgyptAuthService {
     // User receives missed call from +202...
     // Our API detects the missed call (timestamp)
     // User doesn't need to do anything
-    
+
     const response = await sinchClient.post('/callouts/flash', {
       to: phoneNumber,
       region: 'EG',
     });
-    
+
     return response.sessionId;
   }
-  
+
   async verifyFlashCall(sessionId: string, missedCallTime: number): Promise<boolean> {
     // Verify the missed call was received within +/- 5 seconds
     const session = await db.flashCallSessions.findById(sessionId);
     const timeDiff = Math.abs(Date.now() - missedCallTime);
-    
+
     return timeDiff < 5000; // 5 second tolerance
   }
-  
+
   // Fallback 1: WhatsApp OTP (if Flash Call fails)
   async sendWhatsAppOTP(phoneNumber: string): Promise<void> {
     const otp = generateOTP(6);
-    
+
     await whatsappAPI.sendMessage({
       to: phoneNumber,
       text: `Your D-A-I-R-A verification code: ${otp}. Valid for 10 minutes.`,
       templateName: 'otp_verification'
     });
-    
+
     await redis.set(`otp:${phoneNumber}`, otp, 'EX', 600); // 10 min expiry
   }
-  
+
   async verifyWhatsAppOTP(phoneNumber: string, otp: string): Promise<boolean> {
     const stored = await redis.get(`otp:${phoneNumber}`);
     return stored === otp;
   }
-  
+
   // Fallback 2: SMS OTP (if WhatsApp fails)
   async sendSMSOTP(phoneNumber: string): Promise<void> {
     const otp = generateOTP(6);
-    
+
     await smsProvider.send({
       to: phoneNumber,
       message: `Your D-A-I-R-A code: ${otp}`
     });
-    
+
     await redis.set(`otp:${phoneNumber}`, otp, 'EX', 600);
   }
-  
+
   // Login Flow
   async login(phoneNumber: string) {
     try {

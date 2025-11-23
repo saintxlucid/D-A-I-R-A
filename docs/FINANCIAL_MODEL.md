@@ -1,9 +1,9 @@
 # D-A-I-R-A Financial Model & Sustainability Strategy
 
-**Scenario:** Launch with cold start seeding, Egyptian payment infrastructure  
-**Timeline:** 24 months to profitability  
-**Assumptions:** 50K → 500K users, progressive monetization  
-**Confidence:** Medium (Egyptian market highly uncertain)  
+**Scenario:** Launch with cold start seeding, Egyptian payment infrastructure
+**Timeline:** 24 months to profitability
+**Assumptions:** 50K → 500K users, progressive monetization
+**Confidence:** Medium (Egyptian market highly uncertain)
 
 ---
 
@@ -489,14 +489,14 @@ Valuation: $1-2M (pre-revenue or early revenue)
 Terms: 10-20% equity
 
 What you tell investors:
-"D-A-I-R-A is the TikTok for Egyptian creators. We've validated 
+"D-A-I-R-A is the TikTok for Egyptian creators. We've validated
 cold start via influencer seeding. Now we need capital to:
 1. Scale infrastructure ($50k/month by Month 6)
 2. Hire team ($20k/month)
 3. Market for free users ($5k/month)
 4. Reach 1M users in 12 months
 
-If we hit targets, we'll be profitable by Month 8-9 with 
+If we hit targets, we'll be profitable by Month 8-9 with
 $10M+ annual revenue potential."
 
 Investor deck sections:
@@ -996,7 +996,7 @@ Decision needed: Fight (expensive) or surrender
 
 ---
 
-**Owner:** CFO / Founder  
-**Review Frequency:** Monthly (actual vs projection)  
-**Success Metric:** Positive net income by Month 8-10  
+**Owner:** CFO / Founder
+**Review Frequency:** Monthly (actual vs projection)
+**Success Metric:** Positive net income by Month 8-10
 **Escalation:** If any cost >10% over budget or revenue <80% of target → emergency meeting

@@ -1,9 +1,9 @@
 # Track 1: Legal & Compliance Implementation (Weeks 1-2)
 
-**Owner:** CEO + Legal Lead  
-**Timeline:** 14 days (parallel with frontend/video work)  
-**Budget:** $500-1,000 (templates provided; legal review additional)  
-**Goal:** Achieve legal operability + content moderation foundation  
+**Owner:** CEO + Legal Lead
+**Timeline:** 14 days (parallel with frontend/video work)
+**Budget:** $500-1,000 (templates provided; legal review additional)
+**Goal:** Achieve legal operability + content moderation foundation
 
 ---
 
@@ -256,12 +256,12 @@ export class ConsentService {
         timestamp: new Date(),
         ipAddress: consentData.ipAddress,
         userAgent: consentData.userAgent,
-        
+
         // Explicit consent for each processing purpose
         dataProcessingConsent: consentData.dataProcessingConsent, // Required
         marketingEmailConsent: consentData.marketingEmail, // Optional
         analyticsConsent: consentData.analytics, // Optional
-        
+
         // Legal metadata
         policyVersion: '1.0', // Which policy they agreed to
         pdplArticle: '10', // Reference PDPL article
@@ -280,7 +280,7 @@ export class ConsentService {
       // If user revokes all consent, must delete their account
       throw new Error('Revoking all consent requires account deletion');
     }
-    
+
     await this.prisma.userConsent.updateMany({
       where: { userId, consentType },
       data: { revokedAt: new Date() },
@@ -300,10 +300,10 @@ export class ConsentService {
     });
 
     if (!consent) return false;
-    
+
     if (purpose === 'MARKETING') return consent.marketingEmailConsent;
     if (purpose === 'ANALYTICS') return consent.analyticsConsent;
-    
+
     return false;
   }
 }
@@ -344,7 +344,7 @@ export const ConsentForm: React.FC<{ onSubmit: (data: ConsentData) => void }> = 
     <form onSubmit={handleSubmit(onSubmit)} dir="rtl" lang="ar">
       <fieldset className="border-t pt-6">
         <legend className="text-lg font-bold mb-4">الموافقات المطلوبة</legend>
-        
+
         {/* MANDATORY: Data Processing */}
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded">
           <label className="flex items-start gap-3 cursor-pointer">
@@ -650,7 +650,7 @@ export class ArabicContentFilter {
   private async initializeFilter() {
     // Load Arabic harmful keywords into Bloom Filter (memory efficient)
     const harmfulKeywords = this.loadArabicKeywords();
-    
+
     // Create Bloom Filter (false positive rate: 0.1%)
     this.bloomFilter = BloomFilter.ScottyBloomFilter.from(
       harmfulKeywords,
@@ -719,27 +719,27 @@ export class ArabicContentFilter {
       'كفار',
       'يهود',
       'أقباط_كفار',
-      
+
       // Violence
       'قتل_الكفار',
       'تفجير',
       'إرهاب',
-      
+
       // Sexual content (non-explicit)
       'جنس',
       'حرام',
       'فاجر',
-      
+
       // Slang variants & Franco-Arabic
       'k3far', // كفار in Franco-Arabic
       'y3hod', // يهود
       '3a7an', // عاهن (prostitute)
       'zane', // زنا (fornication)
-      
+
       // Misspellings (ا vs آ vs إ)
       'اله', // alternate spelling
       'الاه',
-      
+
       // Plus ~5,000 more keywords from moderation research
     ];
   }
@@ -747,13 +747,13 @@ export class ArabicContentFilter {
   private checkBloomFilter(content: string): { flagged: boolean } {
     const normalized = this.normalizeArabic(content);
     const tokens = this.tokenize(normalized);
-    
+
     for (const token of tokens) {
       if (this.bloomFilter.has(token)) {
         return { flagged: true };
       }
     }
-    
+
     return { flagged: false };
   }
 
@@ -780,15 +780,15 @@ export class ArabicContentFilter {
     // 1. Repeated characters: "كككك" (emphasis)
     // 2. Multiple exclamations: "!!!!!!"
     // 3. URL patterns (spam)
-    
+
     if (/(\w)\1{4,}/.test(content)) {
       return { flagged: true, reason: 'Repeated characters (spam)', score: 0.6 };
     }
-    
+
     if (/!{3,}|؟{3,}/.test(content)) {
       return { flagged: true, reason: 'Multiple punctuation (spam)', score: 0.5 };
     }
-    
+
     return { flagged: false };
   }
 
@@ -874,10 +874,10 @@ export class ReportService {
   private calculatePriority(reason: string): 'LOW' | 'MEDIUM' | 'HIGH' {
     const highPriority = ['HATE_SPEECH', 'VIOLENCE', 'SEXUAL_CONTENT'];
     if (highPriority.includes(reason)) return 'HIGH';
-    
+
     const mediumPriority = ['HARASSMENT', 'MISINFORMATION'];
     if (mediumPriority.includes(reason)) return 'MEDIUM';
-    
+
     return 'LOW';
   }
 

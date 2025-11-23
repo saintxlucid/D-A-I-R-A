@@ -1,106 +1,705 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ==================== AUTH & IDENTITY ====================
+
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  profiles  Profile[]
-  sessions  Session[]
-  auditLogs AuditLog[]
-  posts     Post[]
-  followers Follow[]  @relation("follower")
-  following Follow[]  @relation("following")
-  likes     Like[]
-  comments  Comment[]
+  id                    String      @id @default(uuid())
+  email                 String      @unique
+  phone                 String?     @unique
+  password              String?     // Optional for OAuth/passwordless
+  username              String      @unique
+  displayName           String?
+  avatar                String?
+  bio                   String?
+  verificationStatus    VerificationStatus @default(UNVERIFIED)
+  verificationBadge     VerificationBadge?
+
+  // Account
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  deletedAt             DateTime?   // Soft delete
+  lastLoginAt           DateTime?
+
+  // Settings
+  privacyLevel          PrivacyLevel @default(PUBLIC)
+  allowDMs              Boolean     @default(true)
+  notificationsEnabled  Boolean     @default(true)
+  language              String      @default("en")
+
+  // Trust & Moderation
+  trustScore            Float       @default(100)
+  suspendedUntil        DateTime?
+  muteList              String[]    @default([])
+  blockList             String[]    @default([])
+
+  // Relations
+  profile               Profile?
+  sessions              Session[]
+  auditLogs             AuditLog[]
+
+  posts                 Post[]
+  videos                Video[]
+  stories               Story[]
+
+  followers             Follow[]    @relation("follower")
+  following             Follow[]    @relation("following")
+
+  circles               Circle[]
+  circleMembers         CircleMember[]
+
+  likes                 Reaction[]  @relation("reactor")
+  comments              Comment[]
+
+  sentMessages          Message[]   @relation("sender")
+  receivedMessages      Message[]   @relation("receiver")
+
+  wallet                Wallet?
+  transactions          Transaction[]
+  tips                  Tip[]       @relation("tipper")
+  tipsReceived          Tip[]       @relation("tippee")
+
+  subscriptions         CreatorSubscription[] @relation("subscriber")
+  subscribers           CreatorSubscription[] @relation("creator")
+
+  creatorMetrics        CreatorMetrics?
 
   @@index([email])
-}
-model Profile {
-  id     String  @id @default(uuid())
-  type   String
-  user   User    @relation(fields: [userId], references: [id])
-  userId String
-}
-model Session {
-  id        String   @id @default(uuid())
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String
-  token     String
-  expiresAt DateTime
-}
-model AuditLog {
-  id        String   @id @default(uuid())
-  user      User?    @relation(fields: [userId], references: [id])
-  userId    String?
-  action    String
-  createdAt DateTime @default(now())
-}
-
-model Post {
-  id        String   @id @default(uuid())
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String
-  content   String
-  media     Media[]
-  likes     Like[]
-  comments  Comment[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([authorId])
+  @@index([username])
   @@index([createdAt])
-  @@index([updatedAt])
+  @@index([trustScore])
 }
 
-model Media {
-  id        String   @id @default(uuid())
-  url       String
-  type      String
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
-  createdAt DateTime @default(now())
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationBadge {
+  GOLD      // Creator verified
+  BLUE      // Organization verified
+  GREEN     // Government verified
+}
+
+enum PrivacyLevel {
+  PUBLIC
+  PRIVATE
+  CIRCLES
+}
+
+model Profile {
+  id                String    @id @default(uuid())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @unique
+
+  // Profile info
+  bio               String?
+  location          String?
+  website           String?
+  interests         String[]
+
+  // Circles
+  primaryCircle     String?   // Circle name (Inner, Outer, etc.)
+  district          String?   // Egyptian governorate
+
+  // Stats
+  totalFollowers    Int       @default(0)
+  totalFollowing    Int       @default(0)
+  totalPosts        Int       @default(0)
+  totalVideos       Int       @default(0)
+
+  updatedAt         DateTime  @updatedAt
+}
+
+model VerificationBadgeInfo {
+  id                String    @id @default(uuid())
+  userId            String
+  badgeType         VerificationBadge
+  issuedAt          DateTime  @default(now())
+  verifiedBy        String?   // Admin ID
+  reason            String?
+}
+
+model Session {
+  id                String    @id @default(uuid())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+
+  // Auth
+  token             String    @unique
+  refreshToken      String?
+
+  // Metadata
+  deviceType        String?   // web, mobile-ios, mobile-android
+  ipAddress         String?
+  userAgent         String?
+
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+  revokedAt         DateTime?
+
+  @@index([userId])
+  @@index([token])
+}
+
+model AuditLog {
+  id                String    @id @default(uuid())
+  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId            String?
+
+  action            String    // LOGIN, POST_CREATED, CONTENT_REMOVED, etc.
+  resourceType      String?   // User, Post, Video, etc.
+  resourceId        String?
+
+  metadata          Json?
+  ipAddress         String?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ==================== CIRCLES & SOCIAL GRAPH ====================
+
+model Circle {
+  id                String    @id @default(uuid())
+  creator           User      @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId         String
+
+  name              String    // Inner, Outer, District, Interest, Creator
+  type              CircleType
+  description       String?
+  avatar            String?
+
+  isPrivate         Boolean   @default(false)
+  members           CircleMember[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([creatorId])
+  @@index([type])
+}
+
+enum CircleType {
+  INNER       // Closest friends
+  OUTER       // Extended network
+  DISTRICT    // Geographic (governorate)
+  INTEREST    // Topic-based
+  CREATOR     // Subscription circle
+}
+
+model CircleMember {
+  id                String    @id @default(uuid())
+  circle            Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  circleId          String
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+
+  joinedAt          DateTime  @default(now())
+  role              CircleRole @default(MEMBER)
+
+  @@unique([circleId, userId])
+  @@index([circleId])
+  @@index([userId])
+}
+
+enum CircleRole {
+  ADMIN
+  MODERATOR
+  MEMBER
 }
 
 model Follow {
-  id         String   @id @default(uuid())
-  follower   User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
-  followerId String
-  following  User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
-  followingId String
-  createdAt  DateTime @default(now())
+  id                String    @id @default(uuid())
+  follower          User      @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId        String
+
+  following         User      @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId       String
+
+  createdAt         DateTime  @default(now())
+  mutedAt           DateTime?
 
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
 }
 
-model Like {
-  id       String   @id @default(uuid())
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId   String
-  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId   String
-  createdAt DateTime @default(now())
+// ==================== CONTENT ====================
 
-  @@unique([userId, postId])
-  @@index([userId])
+model Post {
+  id                String    @id @default(uuid())
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId          String
+
+  content           String    @db.Text
+  contentType       ContentType
+
+  // Privacy & Distribution
+  circleId          String?
+  visibleInCircles  String[]  @default([])
+  isPublic          Boolean   @default(true)
+
+  // Monetization
+  isPinned          Boolean   @default(false)
+  isShoppable       Boolean   @default(false)
+  shoppingLinks     String[]  @default([])
+
+  // Engagement
+  reactions         Reaction[]
+  comments          Comment[]
+
+  // Media
+  videos            Video[]
+  attachments       PostAttachment[]
+
+  // Metadata
+  status            ContentStatus @default(ACTIVE)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([contentType])
+}
+
+enum ContentType {
+  TEXT
+  IMAGE
+  VIDEO
+  CAROUSEL
+  STORY
+  THREAD
+  REEL
+}
+
+enum ContentStatus {
+  ACTIVE
+  ARCHIVED
+  MODERATION_HOLD
+  REMOVED
+  DELETED
+}
+
+model PostAttachment {
+  id                String    @id @default(uuid())
+  post              Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId            String
+
+  url               String
+  mediaType         String
+  order             Int
+
+  thumbnail         String?
+  duration          Int?      // For videos
+
+  createdAt         DateTime  @default(now())
+
   @@index([postId])
 }
 
+model Video {
+  id                String    @id @default(uuid())
+  uploader          User      @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploaderId        String
+
+  post              Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  postId            String?
+
+  // File info
+  filename          String
+  mimeType          String
+  fileSize          Int
+  duration          Int       // seconds
+
+  // Processing
+  status            VideoStatus
+  processingError   String?
+
+  // Transcoding
+  originalUrl       String
+  hlsUrl            String?
+  posterUrl         String?
+
+  // Quality tiers
+  quality240p       String?
+  quality480p       String?
+  quality720p       String?
+  quality1080p      String?
+
+  // Metadata
+  width             Int?
+  height            Int?
+  fps               Int?
+  bitrate           Int?
+
+  // AI/ML
+  embeddings        Float[]?  // Vector embeddings for recommendations
+  labels            String[]  @default([])
+
+  // Monetization
+  adFriendly        Boolean   @default(true)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([uploaderId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum VideoStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+model Story {
+  id                String    @id @default(uuid())
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId          String
+
+  mediaUrl          String
+  mediaType         String    // image, video
+  caption           String?
+
+  visibleTo         String[]  @default([])
+  expiresAt         DateTime
+
+  createdAt         DateTime  @default(now())
+
+  @@index([authorId])
+  @@index([expiresAt])
+}
+
+// ==================== INTERACTIONS ====================
+
+model Reaction {
+  id                String    @id @default(uuid())
+
+  reactor           User      @relation("reactor", fields: [reactorId], references: [id], onDelete: Cascade)
+  reactorId         String
+
+  post              Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId            String
+
+  type              ReactionType
+  createdAt         DateTime  @default(now())
+
+  @@unique([reactorId, postId, type])
+  @@index([postId])
+  @@index([reactorId])
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  HAHA
+  SAD
+  ANGRY
+}
+
 model Comment {
-  id        String   @id @default(uuid())
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  authorId  String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  postId    String
-  content   String
-  createdAt DateTime @default(now())
+  id                String    @id @default(uuid())
+  author            User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId          String
+
+  post              Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId            String
+
+  content           String    @db.Text
+
+  // Mentions & Tags
+  mentions          String[]  @default([])
+  hashtags          String[]  @default([])
+
+  // Moderation
+  status            ContentStatus @default(ACTIVE)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([authorId])
   @@index([postId])
+  @@index([createdAt])
+}
+
+model Message {
+  id                String    @id @default(uuid())
+
+  sender            User      @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId          String
+
+  receiver          User      @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId        String
+
+  content           String    @db.Text
+  mediaUrl          String?
+
+  isRead            Boolean   @default(false)
+  readAt            DateTime?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// ==================== WALLET & PAYMENTS ====================
+
+model Wallet {
+  id                String    @id @default(uuid())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @unique
+
+  // Balances
+  creditBalance     Float     @default(0)  // Virtual currency
+  cashBalance       Float     @default(0)  // Real money ready to cash out
+
+  totalEarned       Float     @default(0)
+  totalSpent        Float     @default(0)
+  totalWithdrawn    Float     @default(0)
+
+  // Payment Methods
+  paymentMethods    PaymentMethod[]
+
+  // Transactions
+  transactions      Transaction[]
+
+  updatedAt         DateTime  @updatedAt
+}
+
+model PaymentMethod {
+  id                String    @id @default(uuid())
+  wallet            Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId          String
+
+  type              PaymentMethodType
+  provider          String    // fawry, vodafone_cash, etc.
+
+  // Encrypted payment details
+  encryptedData     String
+
+  isDefault         Boolean   @default(false)
+  isVerified        Boolean   @default(false)
+
+  createdAt         DateTime  @default(now())
+
+  @@index([walletId])
+}
+
+enum PaymentMethodType {
+  FAWRY
+  VODAFONE_CASH
+  ORANGE_CASH
+  INSTAPAY
+  BANK_ACCOUNT
+}
+
+model Transaction {
+  id                String    @id @default(uuid())
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String
+
+  wallet            Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  walletId          String
+
+  type              TransactionType
+  amount            Float
+  currency          String    @default("EGP")
+
+  // Source/Destination
+  fromUser          String?   // For transfers/tips
+  toUser            String?   // For transfers/tips
+
+  // Payment processing
+  paymentMethod     String?
+  externalTxnId     String?
+  status            TransactionStatus
+
+  // Metadata
+  description       String?
+  metadata          Json?
+
+  createdAt         DateTime  @default(now())
+  completedAt       DateTime?
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TransactionType {
+  TIP
+  SUBSCRIPTION
+  AD_REVENUE
+  CREATOR_FUND
+  WITHDRAWAL
+  REFUND
+  BONUS
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Tip {
+  id                String    @id @default(uuid())
+
+  tipper            User      @relation("tipper", fields: [tipperId], references: [id], onDelete: Cascade)
+  tipperId          String
+
+  tippee            User      @relation("tippee", fields: [tippeeId], references: [id], onDelete: Cascade)
+  tippeeId          String
+
+  amount            Float
+  currency          String    @default("EGP")
+
+  message           String?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([tipperId])
+  @@index([tippeeId])
+}
+
+model CreatorSubscription {
+  id                String    @id @default(uuid())
+
+  subscriber        User      @relation("subscriber", fields: [subscriberId], references: [id], onDelete: Cascade)
+  subscriberId      String
+
+  creator           User      @relation("creator", fields: [creatorId], references: [id], onDelete: Cascade)
+  creatorId         String
+
+  tier              String    // bronze, silver, gold
+  monthlyPrice      Float
+
+  status            SubscriptionStatus
+
+  startDate         DateTime  @default(now())
+  renewalDate       DateTime
+  cancellationDate  DateTime?
+
+  @@unique([subscriberId, creatorId])
+  @@index([subscriberId])
+  @@index([creatorId])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+model CreatorMetrics {
+  id                String    @id @default(uuid())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String    @unique
+
+  // Stats
+  totalFollowers    Int       @default(0)
+  totalViews        Int       @default(0)
+  totalEngagement   Int       @default(0)
+
+  // Monetization
+  totalEarnings     Float     @default(0)
+  monthlyEarnings   Float     @default(0)
+
+  // Content
+  totalPosts        Int       @default(0)
+  totalVideos       Int       @default(0)
+
+  updatedAt         DateTime  @updatedAt
+}
+
+// ==================== MODERATION ====================
+
+model ContentModeration {
+  id                String    @id @default(uuid())
+
+  resourceType      String    // Post, Video, Comment, User
+  resourceId        String
+
+  reason            String    // NSFW, Violence, Hate Speech, Spam
+  severity          ModerationSeverity
+  status            ModerationStatus
+
+  reportedBy        String?   // User ID
+  reviewedBy        String?   // Admin ID
+
+  metadata          Json?
+
+  createdAt         DateTime  @default(now())
+  resolvedAt        DateTime?
+
+  @@index([resourceType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ModerationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ModerationStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  REJECTED
+  APPEALED
+}
+
+model ContentReport {
+  id                String    @id @default(uuid())
+
+  reportedResourceType String
+  reportedResourceId  String
+
+  reporter          String    // User ID
+  reason            String
+  description       String?
+
+  status            ReportStatus
+
+  metadata          Json?
+
+  createdAt         DateTime  @default(now())
+
+  @@index([reportedResourceType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  ACTION_TAKEN
+  NO_ACTION
+  APPEALED
 }

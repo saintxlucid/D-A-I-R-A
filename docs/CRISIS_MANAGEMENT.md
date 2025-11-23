@@ -1,8 +1,8 @@
 # D-A-I-R-A Crisis Management & Incident Playbooks
 
-**Objective:** Prepare rapid response protocols for high-impact incidents  
-**Scope:** Security, operational, legal, and reputational crises  
-**Severity Levels:** P0 (system down) → P1 (major impact) → P2 (moderate) → P3 (minor)  
+**Objective:** Prepare rapid response protocols for high-impact incidents
+**Scope:** Security, operational, legal, and reputational crises
+**Severity Levels:** P0 (system down) → P1 (major impact) → P2 (moderate) → P3 (minor)
 
 ---
 
@@ -19,7 +19,7 @@ Examples:
 ├─ 50%+ user data lost
 └─ Payment processing failed for 24+ hours
 
-Impact: 
+Impact:
 ├─ Revenue loss: ~$800-1000/hour
 ├─ User churn: 5-10% if >2 hours
 ├─ Legal liability: Possible
@@ -194,12 +194,12 @@ PANIC MODE: Do NOT touch anything
 
 **Status Page Update (Every 30 minutes during outage):**
 ```
-Initial (5 min): 
+Initial (5 min):
 "🔴 INVESTIGATING: Platform unresponsive. Our team is investigating the cause.
 Last updated: [time]"
 
 After 15 min:
-"🔴 INVESTIGATING: We've identified [brief technical description]. 
+"🔴 INVESTIGATING: We've identified [brief technical description].
 Working to restore. ETA: ~15 minutes.
 Last updated: [time]"
 
@@ -216,21 +216,21 @@ Last updated: [time]"
 **User Communication (If outage >1 hour):**
 ```
 Post on homepage banner:
-"⚠️ We're currently experiencing service disruptions. 
-Our team is working to restore access. 
+"⚠️ We're currently experiencing service disruptions.
+Our team is working to restore access.
 Check status.daira.app for updates."
 
 Email to users (if email still works):
 Subject: "D-A-I-R-A Service Disruption - We're Working on It"
 
 Body:
-"We experienced a service outage starting at [time]. 
-Our technical team is actively working to restore full service. 
+"We experienced a service outage starting at [time].
+Our technical team is actively working to restore full service.
 We apologize for the disruption and will update you hourly.
 Latest status: [link to status page]"
 
 Twitter/Public:
-"We're aware of service disruptions affecting D-A-I-R-A users. 
+"We're aware of service disruptions affecting D-A-I-R-A users.
 Our team is investigating and working on a fix. Updates every 30 min on [status page]."
 ```
 
@@ -303,7 +303,7 @@ Body:
 "The service disruption that started at [time] has been resolved as of [time].
 Root cause: [plain English explanation, not technical jargon]
 
-Example: "A database disk became full, preventing new data writes. 
+Example: "A database disk became full, preventing new data writes.
 We've freed up space and verified all data is intact."
 
 What we're doing:
@@ -376,7 +376,7 @@ We're implementing [safeguards] to prevent recurrence."
   ├─ Unauthorized data export: check database audit logs
   ├─ Website defacement: check version control for unauthorized changes
   └─ Example: "CREATE TABLE attacker_backdoor" in database logs
-  
+
 □ If breach confirmed: ISOLATE AFFECTED SYSTEM
   ├─ Kill database connections (shut down app briefly)
   ├─ Isolate from internet (unless you can't)
@@ -488,15 +488,15 @@ Step 1: Report to PDPA (Egyptian authority)
 ├─ Provide: Description of breach, data affected, remediation steps
 ├─ Timeline: Within 72 hours of discovery
 └─ Letter format:
-   "On [date] at [time], we discovered unauthorized access to 
+   "On [date] at [time], we discovered unauthorized access to
     D-A-I-R-A servers affecting [X] user records.
-    
+
     Data compromised: [user emails, phone numbers, etc - be specific]
     Number of users affected: [X users]
     Likely cause: [SQL injection / weak password / etc]
     When discovered: [date/time]
     Corrective actions taken: [all mitigations above]
-    
+
     We are notifying affected users and have implemented [safeguards]
     to prevent recurrence."
 
@@ -508,11 +508,11 @@ Step 2: Notify affected users
 Subject: "Important: Security Incident Notification (Action Required)"
 
 Body:
-"We're writing to inform you of a security incident that may have affected 
+"We're writing to inform you of a security incident that may have affected
 your D-A-I-R-A account.
 
 What happened:
-On [date], we discovered unauthorized access to our servers. An attacker 
+On [date], we discovered unauthorized access to our servers. An attacker
 accessed user data including [list specifically: email, phone, birth date, etc].
 
 What was NOT compromised:
@@ -522,7 +522,7 @@ What we're doing:
 1. We've secured the system and rotated all security credentials
 2. We've notified law enforcement and are cooperating with investigation
 3. Your password has been invalidated - please reset it on next login
-4. We recommend changing password on any other sites where you used 
+4. We recommend changing password on any other sites where you used
    the same password
 
 What you should do:
@@ -603,7 +603,7 @@ Do NOT:
 **Initial Communication:**
 ```
 Call government liaison/fixer immediately:
-"We received [type of] request from [agency]. 
+"We received [type of] request from [agency].
 Key ask: [what they want]
 Deadline: [when they want response]
 We're reviewing with legal team. What's your read on this?
@@ -637,10 +637,10 @@ Questions for Egyptian lawyer:
    └─ Mix of all three? (most likely)
 
 4. Can we negotiate scope?
-   ├─ "Instead of removing all political content, 
+   ├─ "Instead of removing all political content,
        we'll add disclaimer labels?"
    ├─ "We'll remove the specific post, not entire account?"
-   ├─ "We need legal documentation to comply properly - 
+   ├─ "We need legal documentation to comply properly -
        can you provide written guidance?"
    └─ Negotiation buys time + may soften request
 ```
@@ -701,8 +701,8 @@ Example letter to government:
 
 "Thank you for your request regarding [content].
 
-D-A-I-R-A is committed to complying with Egyptian law. 
-We've reviewed your request carefully and want to ensure we respond 
+D-A-I-R-A is committed to complying with Egyptian law.
+We've reviewed your request carefully and want to ensure we respond
 appropriately.
 
 Regarding [specific content]:
@@ -713,8 +713,8 @@ To ensure we're in full compliance, we'd appreciate:
 2. Definition of "false information" vs. "opinion" for this context
 3. Timeline and process for appeals if we believe request is overly broad
 
-We take regulatory compliance seriously and want to work closely 
-with NTRA to ensure we're meeting all obligations while continuing 
+We take regulatory compliance seriously and want to work closely
+with NTRA to ensure we're meeting all obligations while continuing
 to serve Egyptian users."
 
 Pros:
@@ -735,16 +735,16 @@ Timeline: Government usually responds in 5-10 days
 ```
 Example response:
 
-"Thank you for your request. After careful legal review with our 
-Egyptian and international counsel, we believe this request exceeds 
-the scope of Egyptian law and would require us to violate principles 
+"Thank you for your request. After careful legal review with our
+Egyptian and international counsel, we believe this request exceeds
+the scope of Egyptian law and would require us to violate principles
 of due process and user rights.
 
-We are committed to complying with legal, specific takedown requests 
-that identify particular content violating specific laws. We believe 
+We are committed to complying with legal, specific takedown requests
+that identify particular content violating specific laws. We believe
 this request is overly broad and lacks the specificity required.
 
-We respectfully decline this request but remain open to dialogue 
+We respectfully decline this request but remain open to dialogue
 about how we can work with NTRA constructively."
 
 Pros:
@@ -797,8 +797,8 @@ Avoid Option C unless absolutely forced - it's existential risk
 
 **Public Statement Template:**
 ```
-"D-A-I-R-A received a content request from [agency] and is reviewing 
-it carefully with our Egyptian legal team. 
+"D-A-I-R-A received a content request from [agency] and is reviewing
+it carefully with our Egyptian legal team.
 
 We are committed to:
 - Complying with Egyptian law
@@ -806,8 +806,8 @@ We are committed to:
 - Maintaining trust with our community
 - Working constructively with regulators
 
-We take regulatory requests seriously and will respond appropriately 
-within the legal timeframe. We appreciate our users' patience as we 
+We take regulatory requests seriously and will respond appropriately
+within the legal timeframe. We appreciate our users' patience as we
 work through this process."
 
 Key principle: "cooperative + professional + no details"
@@ -817,8 +817,8 @@ Key principle: "cooperative + professional + no details"
 ```
 Email subject: "Transparency: Regulatory Request"
 
-"We received a content request from [agency] asking us to [action]. 
-We're reviewing this with our legal team in Egypt. 
+"We received a content request from [agency] asking us to [action].
+We're reviewing this with our legal team in Egypt.
 
 Our assessment:
 - This is a [legal/grey/borderline] request under Egyptian law
@@ -826,7 +826,7 @@ Our assessment:
 - Timeline: We expect resolution within [X days]
 - Risk: [Low/Medium/High] - [reasoning]
 
-We'll update you as the situation develops. This is fairly common 
+We'll update you as the situation develops. This is fairly common
 for platforms operating in Egypt and we're handling it appropriately."
 ```
 
@@ -873,7 +873,7 @@ for platforms operating in Egypt and we're handling it appropriately."
   Post on homepage (for international users):
   "D-A-I-R-A service has been restricted in Egypt. Users in Egypt
   can access via VPN. We're working with regulators to restore access."
-  
+
 □ Update status page: "Platform Restricted in Egypt"
 
 □ Email team:
@@ -945,7 +945,7 @@ Subject: CRITICAL - Platform Blocked in Egypt
 "At [time] today, D-A-I-R-A was blocked by NTRA (Egyptian telecom regulator)
 at the ISP level.
 
-This blocks all Egyptian users from accessing the platform. 
+This blocks all Egyptian users from accessing the platform.
 International users are unaffected.
 
 Timeline:
@@ -963,14 +963,14 @@ Financial impact:
 - Revenue loss: ~$2K/day
 - Cash runway: [X days] before we need capital
 
-Risk assessment: This blocks the Egypt market. We're evaluating pivoting to 
+Risk assessment: This blocks the Egypt market. We're evaluating pivoting to
 Saudi Arabia / UAE or returning to Egypt once situation changes."
 ```
 
 **Tell employees:**
 ```
 All-hands meeting:
-"As many of you know, D-A-I-R-A has been blocked in Egypt today. 
+"As many of you know, D-A-I-R-A has been blocked in Egypt today.
 This is a significant setback. Here's what we know:
 
 What happened:
@@ -1011,8 +1011,8 @@ FOR IMMEDIATE RELEASE
 
 D-A-I-R-A Addresses Security Incident; Implementing Enhanced Protections
 
-Cairo, Egypt – D-A-I-R-A, a social video platform for creators, 
-today announced it discovered and addressed a security incident 
+Cairo, Egypt – D-A-I-R-A, a social video platform for creators,
+today announced it discovered and addressed a security incident
 that may have affected user data.
 
 Details:
@@ -1044,7 +1044,7 @@ FOR IMMEDIATE RELEASE
 
 D-A-I-R-A Service Restored After Planned Maintenance
 
-Cairo, Egypt – D-A-I-R-A restored full platform functionality at 
+Cairo, Egypt – D-A-I-R-A restored full platform functionality at
 [time] on [date] after a [duration] service disruption.
 
 What happened:
@@ -1073,7 +1073,7 @@ Subject: Our Apologies For Yesterday's Service Disruption
 
 Hi [User],
 
-Yesterday, D-A-I-R-A experienced a service disruption lasting [duration], 
+Yesterday, D-A-I-R-A experienced a service disruption lasting [duration],
 and we're deeply sorry.
 
 What we learned:
@@ -1082,8 +1082,8 @@ What we learned:
 How we're fixing it:
 [List 2-3 concrete actions]
 
-Thank you for sticking with us through this. We know how important 
-it is for you to have a reliable platform, and we're committed to 
+Thank you for sticking with us through this. We know how important
+it is for you to have a reliable platform, and we're committed to
 doing better.
 
 If you experienced any issues, please email support: support@daira.app
@@ -1199,9 +1199,9 @@ Escalation: Grade C+ triggers post-mortem
 
 ---
 
-**Owner:** CTO + CEO  
-**Review Frequency:** Quarterly  
-**Last Updated:** [Today]  
-**Next Drill:** [Date of next incident simulation]  
+**Owner:** CTO + CEO
+**Review Frequency:** Quarterly
+**Last Updated:** [Today]
+**Next Drill:** [Date of next incident simulation]
 
 **Remember:** You'll have a crisis. The question is whether you're ready.

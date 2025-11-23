@@ -1,9 +1,9 @@
 # Track 3: Video Pipeline Implementation (Weeks 1-6)
 
-**Owner:** Backend Lead + DevOps  
-**Timeline:** 42 days (longest critical path)  
-**Budget:** $100-200/month (AWS Elastic Transcoder or manual FFmpeg)  
-**Goal:** HLS streaming, resumable uploads, 3 quality tiers, cost control  
+**Owner:** Backend Lead + DevOps
+**Timeline:** 42 days (longest critical path)
+**Budget:** $100-200/month (AWS Elastic Transcoder or manual FFmpeg)
+**Goal:** HLS streaming, resumable uploads, 3 quality tiers, cost control
 
 ---
 
@@ -521,7 +521,7 @@ export class VideoTranscodingProcessor {
    * Main transcoding job
    * Input: Raw MP4 file
    * Output: HLS stream (playlist + segments)
-   * 
+   *
    * Quality tiers:
    * 1. 240p @ 400kbps (for slow connections, 3G, Egyptian internet)
    * 2. 480p @ 800kbps (mobile standard)

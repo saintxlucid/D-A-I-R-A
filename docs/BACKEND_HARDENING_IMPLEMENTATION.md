@@ -127,7 +127,7 @@ async getFeed(userId: string, page: number) {
 ```typescript
 async createPost(userId: string, dto: CreatePostInput) {
   const { isBlocked, reason } = await this.moderationService.checkContent(dto.content);
-  
+
   if (isBlocked) {
     throw new BadRequestException({ message: 'Content blocked', reason });
   }
