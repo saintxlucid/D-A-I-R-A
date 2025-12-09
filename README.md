@@ -1,39 +1,65 @@
-<<<<<<< HEAD
-# DAIRA Project
+# DAIRA
+
+> Social Media Platform
 
 ## Quick Start
 
 1. Clone the repo and install Docker & Docker Compose.
-2. Copy `.env.example` to `.env` and fill secrets.
+2. Copy `.env.example` to `.env` and fill in your secrets.
 3. Run all services:
    ```sh
    docker compose up -d
    ```
 4. Access API at http://localhost:4000/health
 
-## Structure
-- `backend/` — FastAPI, workers, migrations, config
-- `web/` — Frontend (React/Vite)
-- `sql/` — DB migrations
-- `docs/` — Architecture, API, features
+## Project Structure
 
-## Backend Setup
-- Python 3.10+
-- Install dependencies:
-   ```sh
-   pip install -r backend/requirements.txt
-   ```
-- Run API locally:
-   ```sh
-   uvicorn app:app --reload --port 4000
-   ```
+```
+├── packages/
+│   ├── backend/    # NestJS TypeScript API
+│   └── frontend/   # Next.js frontend
+├── sql/            # Database migrations
+├── stack/          # Infrastructure configs
+└── web/            # Additional web assets
+```
+
+## Development
+
+### Prerequisites
+- Node.js 18+
+- pnpm
+
+### Install Dependencies
+```sh
+pnpm install
+```
+
+### Run Backend
+```sh
+cd packages/backend
+pnpm start
+```
+
+### Run Frontend
+```sh
+cd packages/frontend
+pnpm dev
+```
 
 ## Testing
-- Run tests:
-   ```sh
-   pytest backend/tests
-   ```
-=======
-# D-A-I-R-A
-Social Media Platform
->>>>>>> 5fac14aec2e889d20d335ab83a75465820e48f96
+
+```sh
+pnpm test        # Unit tests
+pnpm e2e         # End-to-end tests
+```
+
+## Tech Stack
+
+- **Backend**: NestJS, TypeScript
+- **Frontend**: Next.js, React
+- **Database**: PostgreSQL
+- **Infrastructure**: Docker, Docker Compose
+
+## License
+
+See LICENSE for details.
