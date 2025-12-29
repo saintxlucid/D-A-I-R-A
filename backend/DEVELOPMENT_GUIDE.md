@@ -1,12 +1,15 @@
 # DAIRA Backend Development Guide
 
+> NOTE: This document is **legacy/historical** and may describe earlier architecture choices.
+> For current setup in this workspace, use `docs/DEVELOPER_GUIDE.md` and `docs/PROJECT_MAP.md` from the repo root.
+
 ## Overview
 DAIRA is an Egypt-native social media platform combining features from Instagram, Threads, TikTok, and Facebook, tailored for Egyptian culture and creators. The backend is built for scalability, security, and rapid feature delivery.
 
 ---
 
 ## Architecture Summary
-- **API Gateway:** FastAPI (REST + GraphQL)
+- **API Gateway:** (Legacy) FastAPI (REST + GraphQL)
 - **Database:** PostgreSQL (RLS, partitioning, advanced indexing)
 - **Cache:** Redis (sessions, rate limits, feed cache)
 - **Object Storage:** MinIO (S3-compatible)
@@ -22,7 +25,7 @@ DAIRA is an Egypt-native social media platform combining features from Instagram
 1. **Clone the repository**
    ```sh
 git clone <repo-url>
-cd D-A-I-R-A
+cd DAIRA
    ```
 2. **Install Docker & Docker Compose**
    - [Docker Install Guide](https://docs.docker.com/get-docker/)
@@ -32,9 +35,9 @@ make dev
    ```
    - This launches API, DB, Redis, MinIO, Kafka, OpenSearch, Prometheus, Jaeger.
 4. **Check service health**
-   - API: http://localhost:8000/health
-   - GraphQL: http://localhost:8000/graphql
-   - WebSocket: ws://localhost:8000/socket.io
+   - API: (legacy) http://localhost:8000/health
+   - GraphQL: (legacy) http://localhost:8000/graphql
+   - WebSocket: (legacy) ws://localhost:8000/socket.io
    - OpenSearch: http://localhost:9200
    - Prometheus: http://localhost:9090
    - Jaeger: http://localhost:16686
