@@ -1,0 +1,50 @@
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  username          String
+  password          String
+  role              String        @default("user") // 'user', 'admin', 'developer'
+  assignedAlgorithm String?
+  posts             Post[]
+  comments          Comment[]
+  circles           Circle[]      @relation("UserCircles", references: [id])
+  activityLogs      ActivityLog[]
+  createdAt         DateTime      @default(now())
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  content   String
+  comments  Comment[]
+  createdAt DateTime @default(now())
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Circle {
+  id        String   @id @default(cuid())
+  name      String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  ownerId   String
+  members   User[]   @relation("UserCircles")
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  payload   Json
+  createdAt DateTime @default(now())
+}
